@@ -349,7 +349,7 @@
             <div class="setting-group"><label><input type="checkbox" id="soundCheck"> 音效</label></div>
             <div class="setting-group"><label class="setting-label">游戏模式</label><select id="gameModeSelect"><option value="NORMAL">经典模式</option><option value="TIMED">限时模式 (60秒)</option></select></div>
             <div class="setting-group"><label class="setting-label">主题皮肤</label><select id="themeSelect" onchange="changeTheme(this.value)"><option value="default">默认(蓝)</option><option value="cyberpunk">赛博朋克</option><option value="forest">森林</option><option value="classic">经典黑白</option></select></div>
-            <div class="leaderboard-buttons"><button class="small-btn" onclick="saveSettings()">保存</button><button class="small-btn" onclick="toggleSettings()">关闭</button></div>
+            <div class="leaderboard-buttons"><button class="small-btn" onclick="showLeaderboard()">排行榜</button><button class="small-btn" onclick="saveSettings()">保存</button><button class="small-btn" onclick="toggleSettings()">关闭</button></div>
         </div>
     </div>
     <div id="touchControls">
@@ -362,7 +362,7 @@
     </div>
 </div>
 <div id="gameOver"><h2>游戏结束</h2><div>最终分数: <span id="finalScore">0</span></div><div class="leaderboard-buttons"><button class="small-btn" onclick="restart()">再玩一次</button><button class="small-btn" onclick="toggleSettings()">设置</button></div></div>
-<div id="leaderboardPanel"><h2>历史排行榜</h2><div id="leaderboardList"></div><div class="leaderboard-buttons"><button class="small-btn" onclick="showLeaderboard()">排行榜</button><button class="small-btn" onclick="hideLeaderboard()">返回</button><button class="small-btn" onclick="clearAllRecords()">清空记录</button></div></div>
+<div id="leaderboardPanel"><h2>历史排行榜</h2><div id="leaderboardList"></div><div class="leaderboard-buttons"><button class="small-btn" onclick="hideLeaderboard()">返回</button><button class="small-btn" onclick="clearAllRecords()">清空记录</button></div></div>
 
 <script>
     // ---------- 数据库 & 全局变量 ----------
