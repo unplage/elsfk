@@ -515,15 +515,71 @@
     function playSound(type){ if(!soundEnabled||!audioContext) return; if(audioContext.state==='suspended'){ audioContext.resume(); return; } try{ let now=audioContext.currentTime, osc=audioContext.createOscillator(), gain=audioContext.createGain(); osc.connect(gain); gain.connect(audioContext.destination); let freq=800, dur=0.1, vol=0.2; switch(type){ case'move': freq=600; dur=0.05; vol=0.1; break; case'rotate': freq=800; dur=0.07; vol=0.15; break; case'drop': freq=400; dur=0.15; vol=0.25; break; case'line': freq=1000; dur=0.2; vol=0.3; break; case'combo': freq=1200; dur=0.25; vol=0.35; break; case'levelup': freq=600; dur=0.4; vol=0.3; break; case'gameOver': freq=300; dur=0.6; vol=0.2; break; case'hold': freq=700; dur=0.1; vol=0.2; break; case'harddrop': freq=200; dur=0.2; vol=0.25; break; case'tick': freq=1500; dur=0.03; vol=0.1; break; default: return; } osc.frequency.value=freq; gain.gain.setValueAtTime(vol,now); gain.gain.exponentialRampToValueAtTime(0.0001,now+dur); osc.start(now); osc.stop(now+dur); osc.onended=()=>{ osc.disconnect(); gain.disconnect(); }; }catch(e){} }
     // 键盘绑定与初始化
     function bindEvents(){
-        document.addEventListener('keydown',(e)=>{ if(!gameRunning) return; switch(e.key){ case'ArrowLeft': e.preventDefault(); startSoftMove(-1); break; case'ArrowRight': e.preventDefault(); startSoftMove(1); break; case'ArrowDown': e.preventDefault(); startSoftDrop(); break; case'ArrowUp': e.preventDefault(); rotatePiece(); break; case' ': e.preventDefault(); hardDrop(); break; case'c': case'C': holdPiece(); break; case'p': case'P': togglePause(); break; case'Escape': toggleSettings(); break; } });
-        document.addEventListener('keyup',(e)=>{ if(e.key==='ArrowLeft'||e.key==='ArrowRight') stopSoftMove(); if(e.key==='ArrowDown') stopSoftDrop(); });
-        let left=document.getElementById('btnLeft'),right=document.getElementById('btnRight'),down=document.getElementById('btnDown');
-        left.addEventListener('mousedown',()=>startSoftMove(-1)); left.addEventListener('mouseup',stopSoftMove); left.addEventListener('mouseleave',stopSoftMove);
-        right.addEventListener('mousedown',()=>startSoftMove(1)); right.addEventListener('mouseup',stopSoftMove); right.addEventListener('mouseleave',stopSoftMove);
-        down.addEventListener('mousedown',()=>startSoftDrop()); down.addEventListener('mouseup',stopSoftDrop); down.addEventListener('mouseleave',stopSoftDrop);
-        document.getElementById('btnRotate').addEventListener('click',rotatePiece); document.getElementById('btnHardDrop').addEventListener('click',hardDrop); document.getElementById('btnHold').addEventListener('click',holdPiece);
-        ['touchstart','touchend'].forEach(ev=>{ document.querySelectorAll('.touch-btn').forEach(btn=>btn.addEventListener(ev,e=>e.preventDefault())); });
-        document.getElementById('touchControls').addEventListener('touchstart',initAudio);
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+            switch(e.key){
+                case 'ArrowLeft': e.preventDefault(); startSoftMove(-1); break;
+                case 'ArrowRight': e.preventDefault(); startSoftMove(1); break;
+                case 'ArrowDown': e.preventDefault(); startSoftDrop(); break;
+                case 'ArrowUp': e.preventDefault(); rotatePiece(); break;
+                case ' ': e.preventDefault(); hardDrop(); break;
+                case 'c': case 'C': holdPiece(); break;
+                case 'p': case 'P': togglePause(); break;
+                case 'Escape': toggleSettings(); break;
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') stopSoftMove();
+            if (e.key === 'ArrowDown') stopSoftDrop();
+        });
+    
+        // 获取按钮元素
+        const leftBtn = document.getElementById('btnLeft');
+        const rightBtn = document.getElementById('btnRight');
+        const downBtn = document.getElementById('btnDown');
+        const rotateBtn = document.getElementById('btnRotate');
+        const hardDropBtn = document.getElementById('btnHardDrop');
+        const holdBtn = document.getElementById('btnHold');
+    
+        // 统一处理触摸事件：阻止页面滚动/缩放，同时触发动作
+        function attachTouch(btn, action, isLongPress = false) {
+            let pressTimer = null;
+            const start = (e) => {
+                e.preventDefault();      // 阻止页面滚动
+                if (isLongPress) {
+                    pressTimer = setTimeout(() => action(), LONG_PRESS_DELAY);
+                } else {
+                    action();
+                }
+            };
+            const end = () => {
+                if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+                if (isLongPress && typeof stopSoftMove === 'function') stopSoftMove();
+            };
+            btn.addEventListener('touchstart', start, { passive: false });
+            btn.addEventListener('touchend', end);
+            btn.addEventListener('touchcancel', end);
+            // 保留鼠标事件以兼容开发调试
+            btn.addEventListener('mousedown', (e) => { e.preventDefault(); action(); });
+            btn.addEventListener('mouseup', () => { if (isLongPress && typeof stopSoftMove === 'function') stopSoftMove(); });
+            btn.addEventListener('mouseleave', () => { if (isLongPress && typeof stopSoftMove === 'function') stopSoftMove(); });
+        }
+    
+        // 移动按钮（长按连发）
+        attachTouch(leftBtn, () => startSoftMove(-1), true);
+        attachTouch(rightBtn, () => startSoftMove(1), true);
+        // 软降（长按连发）
+        attachTouch(downBtn, () => startSoftDrop(), true);
+        // 旋转、硬降、暂存（单击）
+        attachTouch(rotateBtn, () => rotatePiece(), false);
+        attachTouch(hardDropBtn, () => hardDrop(), false);
+        attachTouch(holdBtn, () => holdPiece(), false);
+    
+        // 触摸板区域首次触摸时初始化音频
+        const controls = document.getElementById('touchControls');
+        controls.addEventListener('touchstart', initAudio, { once: true });
+        controls.addEventListener('mousedown', initAudio, { once: true });
     }
     window.addEventListener('load',async()=>{ await initDatabase(); bindEvents(); applyGridSize('12x24'); updateCanvasSize(); resetBoard(); nextPiece=getNextPiece(); spawnPiece(); animationFrameId=requestAnimationFrame(gameLoop); });
 </script>
