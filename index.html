@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
     <title>终极方块 - 极速触控版</title>
-    <link rel="manifest" href="./manifest.json">
     <style>
         * {
             margin: 0;
@@ -349,7 +348,11 @@
             <div class="setting-group"><label><input type="checkbox" id="soundCheck"> 音效</label></div>
             <div class="setting-group"><label class="setting-label">游戏模式</label><select id="gameModeSelect"><option value="NORMAL">经典模式</option><option value="TIMED">限时模式 (60秒)</option></select></div>
             <div class="setting-group"><label class="setting-label">主题皮肤</label><select id="themeSelect" onchange="changeTheme(this.value)"><option value="default">默认(蓝)</option><option value="cyberpunk">赛博朋克</option><option value="forest">森林</option><option value="classic">经典黑白</option></select></div>
-            <div class="leaderboard-buttons"><button class="small-btn" onclick="saveSettings()">保存</button><button class="small-btn" onclick="toggleSettings()">关闭</button></div>
+            <div class="leaderboard-buttons">
+                <button class="small-btn" onclick="saveSettings()">保存</button>
+                <button class="small-btn" onclick="showLeaderboard()">🏆 排行榜</button>
+                <button class="small-btn" onclick="toggleSettings()">关闭</button>
+            </div>
         </div>
     </div>
     <div id="touchControls">
@@ -365,12 +368,7 @@
 <div id="leaderboardPanel"><h2>历史排行榜</h2><div id="leaderboardList"></div><div class="leaderboard-buttons"><button class="small-btn" onclick="hideLeaderboard()">返回</button><button class="small-btn" onclick="clearAllRecords()">清空记录</button></div></div>
 
 <script>
-    // ---------- 数据库 & 全局变量 ----------
-    const DB_NAME = 'TetrisGameDB';
-    const DB_VERSION = 1;
-    const RECORD_STORE = 'gameRecords';
-    const SETTINGS_STORE = 'gameSettings';
-    let db = null, highScore = 0;
+    // ---------- 全局变量 ----------
     const DIFFICULTY = { EASY:{ speed:1000, scoreMultiplier:0.8 }, NORMAL:{ speed:600, scoreMultiplier:1.0 }, HARD:{ speed:350, scoreMultiplier:1.5 }, EXPERT:{ speed:200, scoreMultiplier:2.0 } };
     const GRID_SIZES = { '10x20':{ cols:10, rows:20, blockSize:24 }, '12x24':{ cols:12, rows:24, blockSize:20 }, '15x30':{ cols:15, rows:30, blockSize:16 } };
     const SHAPES = [
@@ -378,22 +376,22 @@
         { shape:[[0,1,1],[1,1,0]], color:4, name:'S' }, { shape:[[1,1,0],[0,1,1]], color:5, name:'Z' },
         { shape:[[1,0,0],[1,1,1]], color:6, name:'J' }, { shape:[[0,0,1],[1,1,1]], color:7, name:'L' }
     ];
+
     let canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
     let holdCanvas = document.getElementById('holdCanvas'), holdCtx = holdCanvas.getContext('2d');
     let nextPieceCanvas = document.getElementById('nextPieceCanvas'), nextPieceCtx = nextPieceCanvas.getContext('2d');
+
     let COLS=12, ROWS=24, BLOCK_SIZE=20, board=[], currentPiece=null, nextPiece=null, heldPiece=null, canHold=true, currentX=0, currentY=0;
     let score=0, level=1, lines=0, dropSpeed=600, currentDifficulty='NORMAL', gameRunning=true, isPaused=false, lastDrop=0, ghostPieceY=0, showGhostPiece=true, pieceGenerationMode='BAG7', soundEnabled=false;
-    let bag=[], softMoveInterval=null, softMoveDirection=0, MOVE_REPEAT_INTERVAL=90;  // 无延迟连续移动参数
+    let bag=[], softMoveInterval=null, softMoveDirection=0, MOVE_REPEAT_INTERVAL=95;  // 连续移动间隔 (ms)
     let softDropInterval=null, isSoftDropping=false;
-    // 音效
     let audioContext=null, audioInitialized=false, animationFrameId=null;
-    // Combo连击系统
     let comboCount=0;
-    // 限时模式
     let gameMode='NORMAL', timeRemaining=60, timerInterval=null;
-    // 主题皮肤
     let currentTheme='default';
+    let highScore = 0;
 
+    // ---------- 主题 ----------
     function changeTheme(theme) {
         currentTheme = theme;
         document.body.className = '';
@@ -406,121 +404,147 @@
 
     function getLocalDateString(){ let d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
-    // IndexedDB 初始化（确保索引创建）
-    function initDatabase() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_NAME, DB_VERSION);
-            request.onerror = e => reject(e.target.error);
-            request.onsuccess = e => { db = e.target.result; loadHighScore(); loadSettings(); resolve(db); };
-            request.onupgradeneeded = e => {
-                let db = e.target.result;
-                if (!db.objectStoreNames.contains(RECORD_STORE)) {
-                    let store = db.createObjectStore(RECORD_STORE, { keyPath: 'id', autoIncrement: true });
-                    store.createIndex('score', 'score', { unique: false });
-                    store.createIndex('date', 'date', { unique: false });
-                }
-                if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
-                    db.createObjectStore(SETTINGS_STORE, { keyPath: 'key' });
-                }
-            };
-        });
+    // ---------- 历史记录 (localStorage) ----------
+    function saveGameRecord() {
+        const record = {
+            score: score,
+            lines: lines,
+            level: level,
+            date: getLocalDateString(),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            difficulty: currentDifficulty,
+            gridSize: `${COLS}x${ROWS}`,
+            timestamp: Date.now()
+        };
+        let records = JSON.parse(localStorage.getItem('tetris_records') || '[]');
+        records.push(record);
+        records.sort((a,b) => b.score - a.score);
+        if (records.length > 50) records = records.slice(0,50);
+        localStorage.setItem('tetris_records', JSON.stringify(records));
+
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('tetris_highScore', highScore);
+            document.getElementById('highScore').textContent = highScore;
+        }
     }
 
-    function loadHighScore(){
-        if(!db) return;
-        let tx=db.transaction([SETTINGS_STORE],'readonly'), store=tx.objectStore(SETTINGS_STORE), req=store.get('highScore');
-        req.onsuccess=()=>{ if(req.result){ highScore=req.result.value; document.getElementById('highScore').textContent=highScore; } };
+    function getLeaderboard(limit = 50) {
+        let records = JSON.parse(localStorage.getItem('tetris_records') || '[]');
+        records.sort((a,b) => b.score - a.score);
+        return records.slice(0, limit);
     }
-    function saveHighScore(){
-        if(!db)return;
-        let tx=db.transaction([SETTINGS_STORE],'readwrite'),store=tx.objectStore(SETTINGS_STORE);
-        store.put({key:'highScore',value:highScore});
-    }
-    function saveGameRecord(){
-        if(!db)return;
-        let tx=db.transaction([RECORD_STORE],'readwrite'),store=tx.objectStore(RECORD_STORE);
-        store.add({ score, lines, level, date:getLocalDateString(), time:new Date().toLocaleTimeString(), difficulty:currentDifficulty, gridSize:`${COLS}x${ROWS}`, timestamp:Date.now() });
-        if(score>highScore){ highScore=score; saveHighScore(); document.getElementById('highScore').textContent=highScore; }
-    }
-    function getLeaderboard(limit=50){
-        return new Promise((resolve)=>{
-            if(!db){ resolve([]); return; }
-            let tx=db.transaction([RECORD_STORE],'readonly'), store=tx.objectStore(RECORD_STORE), index=store.index('score'), req=index.openCursor(null,'prev'), records=[];
-            req.onsuccess=e=>{ let c=e.target.result; if(c && records.length<limit){ records.push(c.value); c.continue(); } else resolve(records); };
-            req.onerror=()=>resolve([]);
-        });
-    }
-    async function showLeaderboard(){
-        document.getElementById('gameOver').style.display='none';
-        document.getElementById('settingsPanel').style.display='none';
-        let records=await getLeaderboard(50);
-        let listDiv=document.getElementById('leaderboardList');
-        if(records.length===0) listDiv.innerHTML='<div style="text-align:center;padding:20px;">暂无游戏记录</div>';
-        else{
-            let html='';
-            records.forEach((r,i)=>{
-                let dateObj=new Date(r.timestamp||r.date);
-                let dateStr=dateObj.toLocaleDateString();
-                let timeStr=dateObj.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-                html+=`<div class="record-item"><div class="record-rank">${i+1}</div><div class="record-score">${r.score} 分</div><div class="record-details"><span class="record-date">${dateStr}</span><span class="record-time">${timeStr}</span></div></div>`;
+
+    function showLeaderboard() {
+        document.getElementById('gameOver').style.display = 'none';
+        document.getElementById('settingsPanel').style.display = 'none';
+        const records = getLeaderboard(50);
+        const listDiv = document.getElementById('leaderboardList');
+        if (records.length === 0) {
+            listDiv.innerHTML = '<div style="text-align:center;padding:20px;">暂无游戏记录</div>';
+        } else {
+            let html = '';
+            records.forEach((r, i) => {
+                html += `<div class="record-item">
+                            <div class="record-rank">${i+1}</div>
+                            <div class="record-score">${r.score} 分</div>
+                            <div class="record-details">
+                                <span class="record-date">${r.date}</span>
+                                <span class="record-time">${r.time}</span>
+                            </div>
+                        </div>`;
             });
-            listDiv.innerHTML=html;
+            listDiv.innerHTML = html;
         }
-        document.getElementById('leaderboardPanel').style.display='block';
+        document.getElementById('leaderboardPanel').style.display = 'block';
     }
-    function hideLeaderboard(){ document.getElementById('leaderboardPanel').style.display='none'; }
-    function clearAllRecords(){
-        if(confirm('清空所有记录？')){
-            let tx=db.transaction([RECORD_STORE],'readwrite');
-            tx.objectStore(RECORD_STORE).clear();
-            alert('已清空');
+
+    function hideLeaderboard() {
+        document.getElementById('leaderboardPanel').style.display = 'none';
+    }
+
+    function clearAllRecords() {
+        if (confirm('确定清空所有历史记录？')) {
+            localStorage.removeItem('tetris_records');
             showLeaderboard();
         }
     }
 
-    function loadSettings(){
-        if(!db)return;
-        let tx=db.transaction([SETTINGS_STORE],'readonly'),store=tx.objectStore(SETTINGS_STORE),req=store.get('gameSettings');
-        req.onsuccess=()=>{
-            if(req.result){
-                let s=req.result.value;
-                currentDifficulty=s.difficulty||'NORMAL';
-                pieceGenerationMode=s.pieceMode||'BAG7';
-                showGhostPiece=s.showGhostPiece!==false;
-                soundEnabled=s.soundEnabled||false;
-                gameMode=s.gameMode||'NORMAL';
-                currentTheme=s.theme||'default';
-                changeTheme(currentTheme);
-                let gridSize=s.gridSize||'12x24';
-                applyGridSize(gridSize);
-                document.getElementById('difficultySelect').value=currentDifficulty;
-                document.getElementById('pieceModeSelect').value=pieceGenerationMode;
-                document.getElementById('gridSizeSelect').value=gridSize;
-                document.getElementById('ghostPieceCheck').checked=showGhostPiece;
-                document.getElementById('soundCheck').checked=soundEnabled;
-                document.getElementById('gameModeSelect').value=gameMode;
-                dropSpeed=DIFFICULTY[currentDifficulty].speed;
-                if(soundEnabled) initAudio();
-                if(gameMode==='TIMED'){ document.getElementById('timerDisplay').style.display='flex'; timeRemaining=60; updateTimerDisplay(); if(timerInterval) clearInterval(timerInterval); }
-                else document.getElementById('timerDisplay').style.display='none';
-            }
-        };
+    function loadHighScore() {
+        let saved = localStorage.getItem('tetris_highScore');
+        if (saved) {
+            highScore = parseInt(saved);
+            document.getElementById('highScore').textContent = highScore;
+        } else {
+            highScore = 0;
+        }
     }
-    function saveSettings(){
-        let settings={ difficulty:document.getElementById('difficultySelect').value, pieceMode:document.getElementById('pieceModeSelect').value, gridSize:document.getElementById('gridSizeSelect').value, showGhostPiece:document.getElementById('ghostPieceCheck').checked, soundEnabled:document.getElementById('soundCheck').checked, gameMode:document.getElementById('gameModeSelect').value, theme:currentTheme };
-        let tx=db.transaction([SETTINGS_STORE],'readwrite');
-        tx.objectStore(SETTINGS_STORE).put({key:'gameSettings',value:settings});
-        currentDifficulty=settings.difficulty; pieceGenerationMode=settings.pieceMode; showGhostPiece=settings.showGhostPiece; soundEnabled=settings.soundEnabled; gameMode=settings.gameMode;
+
+    // ---------- 游戏设置 (localStorage) ----------
+    function loadSettings() {
+        let settings = localStorage.getItem('tetris_settings');
+        if (settings) {
+            settings = JSON.parse(settings);
+            currentDifficulty = settings.difficulty || 'NORMAL';
+            pieceGenerationMode = settings.pieceMode || 'BAG7';
+            showGhostPiece = settings.showGhostPiece !== false;
+            soundEnabled = settings.soundEnabled || false;
+            gameMode = settings.gameMode || 'NORMAL';
+            currentTheme = settings.theme || 'default';
+            changeTheme(currentTheme);
+            let gridSize = settings.gridSize || '12x24';
+            applyGridSize(gridSize);
+            document.getElementById('difficultySelect').value = currentDifficulty;
+            document.getElementById('pieceModeSelect').value = pieceGenerationMode;
+            document.getElementById('gridSizeSelect').value = gridSize;
+            document.getElementById('ghostPieceCheck').checked = showGhostPiece;
+            document.getElementById('soundCheck').checked = soundEnabled;
+            document.getElementById('gameModeSelect').value = gameMode;
+            dropSpeed = DIFFICULTY[currentDifficulty].speed;
+            if (soundEnabled) initAudio();
+            if (gameMode === 'TIMED') {
+                document.getElementById('timerDisplay').style.display = 'flex';
+                timeRemaining = 60;
+                updateTimerDisplay();
+                if (timerInterval) clearInterval(timerInterval);
+            } else {
+                document.getElementById('timerDisplay').style.display = 'none';
+            }
+        }
+    }
+
+    function saveSettings() {
+        let settings = {
+            difficulty: document.getElementById('difficultySelect').value,
+            pieceMode: document.getElementById('pieceModeSelect').value,
+            gridSize: document.getElementById('gridSizeSelect').value,
+            showGhostPiece: document.getElementById('ghostPieceCheck').checked,
+            soundEnabled: document.getElementById('soundCheck').checked,
+            gameMode: document.getElementById('gameModeSelect').value,
+            theme: currentTheme
+        };
+        localStorage.setItem('tetris_settings', JSON.stringify(settings));
+        currentDifficulty = settings.difficulty;
+        pieceGenerationMode = settings.pieceMode;
+        showGhostPiece = settings.showGhostPiece;
+        soundEnabled = settings.soundEnabled;
+        gameMode = settings.gameMode;
         applyGridSize(settings.gridSize);
-        dropSpeed=DIFFICULTY[currentDifficulty].speed;
-        if(soundEnabled) initAudio();
-        if(gameMode==='TIMED'){ document.getElementById('timerDisplay').style.display='flex'; if(!timerInterval && gameRunning && !isPaused) startTimer(); }
-        else { document.getElementById('timerDisplay').style.display='none'; if(timerInterval) clearInterval(timerInterval); }
-        document.getElementById('settingsPanel').style.display='none';
+        dropSpeed = DIFFICULTY[currentDifficulty].speed;
+        if (soundEnabled) initAudio();
+        if (gameMode === 'TIMED') {
+            document.getElementById('timerDisplay').style.display = 'flex';
+            if (!timerInterval && gameRunning && !isPaused) startTimer();
+        } else {
+            document.getElementById('timerDisplay').style.display = 'none';
+            if (timerInterval) clearInterval(timerInterval);
+        }
+        document.getElementById('settingsPanel').style.display = 'none';
         restart();
         alert('设置已保存');
     }
 
+    // ---------- 游戏核心 ----------
     function applyGridSize(sizeKey){ let size=GRID_SIZES[sizeKey]; COLS=size.cols; ROWS=size.rows; BLOCK_SIZE=size.blockSize; updateCanvasSize(); resetBoard(); }
     function updateCanvasSize(){ canvas.width=COLS*BLOCK_SIZE; canvas.height=ROWS*BLOCK_SIZE; let maxHeight=window.innerHeight*0.6; if(canvas.height>maxHeight){ let scale=maxHeight/canvas.height; canvas.style.width=(canvas.width*scale)+'px'; canvas.style.height=(canvas.height*scale)+'px'; } else { canvas.style.width='auto'; canvas.style.height='auto'; } resetBoard(); }
     function resetBoard(){ board=Array(ROWS).fill().map(()=>Array(COLS).fill(0)); }
@@ -534,7 +558,6 @@
     function rotate(piece){ let rows=piece.shape.length, cols=piece.shape[0].length; let rotated=Array(cols).fill().map(()=>Array(rows).fill(0)); for(let y=0;y<rows;y++) for(let x=0;x<cols;x++) rotated[x][rows-1-y]=piece.shape[y][x]; return {...piece, shape:rotated}; }
     function merge(){ for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++) if(currentPiece.shape[y][x]) board[currentY+y][currentX+x]=currentPiece.color; playSound('drop'); }
 
-    // 消除行 + Combo + 粒子特效
     function clearLines(){
         let linesCleared=0;
         for(let y=ROWS-1;y>=0;y--){
@@ -565,13 +588,15 @@
         updateUI();
         document.getElementById('combo').textContent=comboCount;
     }
+
     function createParticle(x,y){
         let particleDiv=document.createElement('div'); particleDiv.className='particle'; let angle=Math.random()*Math.PI*2, speed=2+Math.random()*4; let dx=Math.cos(angle)*speed, dy=Math.sin(angle)*speed; particleDiv.style.left=(canvas.offsetLeft+x)+'px'; particleDiv.style.top=(canvas.offsetTop+y)+'px'; particleDiv.style.setProperty('--dx',dx*10+'px'); particleDiv.style.setProperty('--dy',dy*10+'px'); particleDiv.style.background=`hsl(${Math.random()*360},70%,60%)`; document.body.appendChild(particleDiv); setTimeout(()=>particleDiv.remove(),600);
     }
+
     function updateSpeed(){ let baseSpeed=DIFFICULTY[currentDifficulty].speed; dropSpeed=Math.max(100, baseSpeed - (level-1)*50); }
     function changeDifficulty(d){ currentDifficulty=d; dropSpeed=DIFFICULTY[d].speed; updateSpeed(); }
 
-    // 绘制函数
+    // 绘制
     function draw(){
         ctx.fillStyle='var(--grid-bg)'; ctx.fillRect(0,0,canvas.width,canvas.height);
         ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=0.5;
@@ -596,11 +621,11 @@
     function drop(){ if(!currentPiece) return; if(!collide(currentX,currentY+1,currentPiece)){ currentY++; updateGhostPiece(); } else { merge(); clearLines(); spawnPiece(); if(gameMode==='TIMED' && timeRemaining<=0) gameOver(); } }
     function move(dir){ if(!currentPiece||isPaused) return; if(!collide(currentX+dir,currentY,currentPiece)){ currentX+=dir; updateGhostPiece(); playSound('move'); } }
 
-    // ========== 优化后的移动控制（零延迟 + 连续移动） ==========
+    // 移动控制 (零延迟 + 连续移动)
     function startSoftMove(dir) {
         if (!gameRunning || isPaused) return;
         softMoveDirection = dir;
-        move(dir);  // 立即移动一次
+        move(dir);
         if (softMoveInterval) clearInterval(softMoveInterval);
         softMoveInterval = setInterval(() => {
             if (softMoveDirection !== 0) move(softMoveDirection);
@@ -616,24 +641,63 @@
     function startSoftDrop(){ if(!gameRunning||isPaused||isSoftDropping) return; isSoftDropping=true; if(!collide(currentX,currentY+1,currentPiece)){ currentY++; score+=1; updateUI(); } softDropInterval=setInterval(()=>{ if(isSoftDropping && !collide(currentX,currentY+1,currentPiece)){ currentY++; score+=1; updateUI(); } else stopSoftDrop(); },100); }
     function stopSoftDrop(){ if(softDropInterval)clearInterval(softDropInterval); isSoftDropping=false; }
     function hardDrop(){ if(!currentPiece||isPaused) return; let dist=0; while(!collide(currentX,currentY+1,currentPiece)){ currentY++; dist++; } score+=dist*2; updateUI(); merge(); clearLines(); spawnPiece(); playSound('harddrop'); }
+
     function startTimer(){ if(timerInterval) clearInterval(timerInterval); timerInterval=setInterval(()=>{ if(!gameRunning||isPaused) return; if(timeRemaining<=0){ clearInterval(timerInterval); gameOver(); } else { timeRemaining--; updateTimerDisplay(); } },1000); }
     function updateTimerDisplay(){ let mins=Math.floor(timeRemaining/60), secs=timeRemaining%60; document.getElementById('timer').textContent=`${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`; if(timeRemaining<=10) playSound('tick'); }
-    async function gameOver(){ gameRunning=false; if(timerInterval)clearInterval(timerInterval); await saveGameRecord(); document.getElementById('finalScore').textContent=score; document.getElementById('gameOver').style.display='block'; playSound('gameOver'); stopSoftDrop(); stopSoftMove(); }
-    function updateUI(){ document.getElementById('score').textContent=score; document.getElementById('level').textContent=level; document.getElementById('lines').textContent=lines; document.getElementById('highScore').textContent=highScore; document.getElementById('combo').textContent=comboCount; }
-    async function restart(){ if(animationFrameId) cancelAnimationFrame(animationFrameId); stopSoftDrop(); stopSoftMove(); if(timerInterval) clearInterval(timerInterval); resetBoard(); currentPiece=null; nextPiece=null; heldPiece=null; canHold=true; score=0; level=1; lines=0; comboCount=0; gameRunning=true; isPaused=false; lastDrop=0; timeRemaining=60; updateTimerDisplay(); currentDifficulty=document.getElementById('difficultySelect').value; pieceGenerationMode=document.getElementById('pieceModeSelect').value; gameMode=document.getElementById('gameModeSelect').value; showGhostPiece=document.getElementById('ghostPieceCheck').checked; soundEnabled=document.getElementById('soundCheck').checked; if(pieceGenerationMode==='BAG7') initBags(); updateSpeed(); updateUI(); document.getElementById('gameOver').style.display='none'; document.getElementById('leaderboardPanel').style.display='none'; document.getElementById('settingsPanel').style.display='none'; document.getElementById('pauseBtn').textContent='暂停'; nextPiece=getNextPiece(); spawnPiece(); drawHoldPiece(); if(gameMode==='TIMED'){ document.getElementById('timerDisplay').style.display='flex'; startTimer(); } else document.getElementById('timerDisplay').style.display='none'; lastDrop=0; animationFrameId=requestAnimationFrame(gameLoop); }
-    function togglePause(){ isPaused=!isPaused; document.getElementById('pauseBtn').textContent=isPaused?'继续':'暂停'; if(isPaused){ stopSoftDrop(); stopSoftMove(); if(timerInterval) clearInterval(timerInterval); } else { if(gameMode==='TIMED' && gameRunning && timeRemaining>0) startTimer(); } }
-    function toggleSettings(){ let panel=document.getElementById('settingsPanel'); panel.style.display=panel.style.display==='block'?'none':'block'; }
 
-    // 音效系统 (Web Audio)
+    async function gameOver(){ gameRunning=false; if(timerInterval)clearInterval(timerInterval); saveGameRecord(); document.getElementById('finalScore').textContent=score; document.getElementById('gameOver').style.display='block'; playSound('gameOver'); stopSoftDrop(); stopSoftMove(); }
+    function updateUI(){ document.getElementById('score').textContent=score; document.getElementById('level').textContent=level; document.getElementById('lines').textContent=lines; document.getElementById('highScore').textContent=highScore; document.getElementById('combo').textContent=comboCount; }
+
+    async function restart(){
+        if(animationFrameId) cancelAnimationFrame(animationFrameId);
+        stopSoftDrop(); stopSoftMove();
+        if(timerInterval) clearInterval(timerInterval);
+        resetBoard();
+        currentPiece=null; nextPiece=null; heldPiece=null; canHold=true;
+        score=0; level=1; lines=0; comboCount=0;
+        gameRunning=true; isPaused=false; lastDrop=0;
+        timeRemaining=60; updateTimerDisplay();
+        currentDifficulty=document.getElementById('difficultySelect').value;
+        pieceGenerationMode=document.getElementById('pieceModeSelect').value;
+        gameMode=document.getElementById('gameModeSelect').value;
+        showGhostPiece=document.getElementById('ghostPieceCheck').checked;
+        soundEnabled=document.getElementById('soundCheck').checked;
+        if(pieceGenerationMode==='BAG7') initBags();
+        updateSpeed();
+        updateUI();
+        document.getElementById('gameOver').style.display='none';
+        document.getElementById('leaderboardPanel').style.display='none';
+        document.getElementById('settingsPanel').style.display='none';
+        document.getElementById('pauseBtn').textContent='暂停';
+        nextPiece=getNextPiece();
+        spawnPiece();
+        drawHoldPiece();
+        if(gameMode==='TIMED'){ document.getElementById('timerDisplay').style.display='flex'; startTimer(); }
+        else document.getElementById('timerDisplay').style.display='none';
+        lastDrop=0;
+        animationFrameId=requestAnimationFrame(gameLoop);
+    }
+
+    function togglePause(){
+        isPaused=!isPaused;
+        document.getElementById('pauseBtn').textContent=isPaused?'继续':'暂停';
+        if(isPaused){ stopSoftDrop(); stopSoftMove(); if(timerInterval) clearInterval(timerInterval); }
+        else { if(gameMode==='TIMED' && gameRunning && timeRemaining>0) startTimer(); }
+    }
+
+    function toggleSettings(){
+        let panel=document.getElementById('settingsPanel');
+        panel.style.display = panel.style.display==='block' ? 'none' : 'block';
+    }
+
+    // 音效系统
     function initAudio(){ if(audioInitialized) return; try{ let AC=window.AudioContext||window.webkitAudioContext; if(AC){ audioContext=new AC(); audioInitialized=true; if(audioContext.state==='suspended'){ let resume=()=>{ audioContext.resume(); document.removeEventListener('click',resume); document.removeEventListener('touchstart',resume); }; document.addEventListener('click',resume,{once:true}); document.addEventListener('touchstart',resume,{once:true}); } } }catch(e){ console.warn(e); } }
     function playSound(type){ if(!soundEnabled||!audioContext) return; if(audioContext.state==='suspended'){ audioContext.resume(); return; } try{ let now=audioContext.currentTime, osc=audioContext.createOscillator(), gain=audioContext.createGain(); osc.connect(gain); gain.connect(audioContext.destination); let freq=800, dur=0.1, vol=0.2; switch(type){ case'move': freq=600; dur=0.05; vol=0.1; break; case'rotate': freq=800; dur=0.07; vol=0.15; break; case'drop': freq=400; dur=0.15; vol=0.25; break; case'line': freq=1000; dur=0.2; vol=0.3; break; case'combo': freq=1200; dur=0.25; vol=0.35; break; case'levelup': freq=600; dur=0.4; vol=0.3; break; case'gameOver': freq=300; dur=0.6; vol=0.2; break; case'hold': freq=700; dur=0.1; vol=0.2; break; case'harddrop': freq=200; dur=0.2; vol=0.25; break; case'tick': freq=1500; dur=0.03; vol=0.1; break; default: return; } osc.frequency.value=freq; gain.gain.setValueAtTime(vol,now); gain.gain.exponentialRampToValueAtTime(0.0001,now+dur); osc.start(now); osc.stop(now+dur); osc.onended=()=>{ osc.disconnect(); gain.disconnect(); }; }catch(e){} }
 
-    // 事件绑定（移动端按钮立即响应）
+    // 事件绑定
     function bindEvents(){
-        // 键盘
         document.addEventListener('keydown',(e)=>{ if(!gameRunning) return; switch(e.key){ case'ArrowLeft': e.preventDefault(); startSoftMove(-1); break; case'ArrowRight': e.preventDefault(); startSoftMove(1); break; case'ArrowDown': e.preventDefault(); startSoftDrop(); break; case'ArrowUp': e.preventDefault(); rotatePiece(); break; case' ': e.preventDefault(); hardDrop(); break; case'c':case'C': holdPiece(); break; case'p':case'P': togglePause(); break; case'Escape': toggleSettings(); break; } });
         document.addEventListener('keyup',(e)=>{ if(e.key==='ArrowLeft'||e.key==='ArrowRight') stopSoftMove(); if(e.key==='ArrowDown') stopSoftDrop(); });
-        // 触摸按钮
         const left=document.getElementById('btnLeft'), right=document.getElementById('btnRight'), down=document.getElementById('btnDown');
         const bindMove = (btn, dir) => {
             btn.addEventListener('touchstart', (e)=>{ e.preventDefault(); startSoftMove(dir); }, {passive:false});
@@ -648,8 +712,19 @@
         document.getElementById('touchControls').addEventListener('touchstart', initAudio);
     }
 
-    window.addEventListener('load', async()=>{ await initDatabase(); bindEvents(); applyGridSize('12x24'); updateCanvasSize(); resetBoard(); nextPiece=getNextPiece(); spawnPiece(); animationFrameId=requestAnimationFrame(gameLoop); });
+    // 初始化
+    window.addEventListener('load', () => {
+        loadHighScore();
+        loadSettings();
+        bindEvents();
+        applyGridSize('12x24');
+        updateCanvasSize();
+        resetBoard();
+        nextPiece = getNextPiece();
+        spawnPiece();
+        animationFrameId = requestAnimationFrame(gameLoop);
+    });
 </script>
-<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sv.js').catch(e=>console.log);</script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sv.js').catch(e=>console.log);</script> 
 </body>
 </html>
