@@ -781,10 +781,6 @@
             });
         }
         
-        // 初始化音频系统
-        // 音效相关 - 使用 Web Audio 动态生成
-        let audioContext = null;
-        let audioInitialized = false;
 
         // 初始化音频上下文（需用户交互后启动）
         function initAudio() {
@@ -821,14 +817,6 @@
         }
 
         
-        // 解锁音频
-        function unlockAudio() {
-            if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume().then(() => {
-                    console.log('音频已解锁');
-                });
-            }
-        }
         
         // 播放指定类型的音效（简短哔哔声）
         function playSound(type) {
