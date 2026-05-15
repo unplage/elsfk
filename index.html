@@ -385,7 +385,7 @@
     let nextPieceCanvas = document.getElementById('nextPieceCanvas'), nextPieceCtx = nextPieceCanvas.getContext('2d');
     let COLS=12, ROWS=24, BLOCK_SIZE=20, board=[], currentPiece=null, nextPiece=null, heldPiece=null, canHold=true, currentX=0, currentY=0;
     let score=0, level=1, lines=0, dropSpeed=600, currentDifficulty='NORMAL', gameRunning=true, isPaused=false, lastDrop=0, ghostPieceY=0, showGhostPiece=true, pieceGenerationMode='BAG7', soundEnabled=false;
-    let bag=[], softMoveInterval=null, softMoveDirection=0, MOVE_REPEAT_INTERVAL=60;  // 无延迟连续移动参数
+    let bag=[], softMoveInterval=null, softMoveDirection=0, MOVE_REPEAT_INTERVAL=100;  // 无延迟连续移动参数
     let softDropInterval=null, isSoftDropping=false;
     // 音效
     let audioContext=null, audioInitialized=false, animationFrameId=null;
