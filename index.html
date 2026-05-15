@@ -652,22 +652,6 @@
         </div>
     </div>
 
-    <!-- 音效文件 (Base64编码的简单音效) -->
-    <audio id="moveSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
-    </audio>
-    <audio id="rotateSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
-    </audio>
-    <audio id="dropSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
-    </audio>
-    <audio id="lineSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
-    </audio>
-    <audio id="gameOverSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
-    </audio>
 
     <script>
         // IndexedDB数据库配置
@@ -798,26 +782,44 @@
         }
         
         // 初始化音频系统
+        // 音效相关 - 使用 Web Audio 动态生成
+        let audioContext = null;
+        let audioInitialized = false;
+
+        // 初始化音频上下文（需用户交互后启动）
         function initAudio() {
-            if (!audioInitialized && soundEnabled) {
-                try {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    if (AudioContext) {
-                        audioContext = new AudioContext();
-                        
-                        // 解锁音频（移动端需要用户交互）
-                        document.addEventListener('click', unlockAudio, { once: true });
-                        document.addEventListener('touchstart', unlockAudio, { once: true });
-                        document.addEventListener('keydown', unlockAudio, { once: true });
-                        
-                        audioInitialized = true;
-                        console.log('音频系统初始化成功');
+            if (audioInitialized) return;
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    audioContext = new AudioContextClass();
+                    // 创建简单的短促振荡器函数
+                    audioInitialized = true;
+                    console.log('Web Audio 已就绪');
+                    
+                    // 移动端需要用户交互才能启动，先挂起，在第一次播放时恢复
+                    if (audioContext.state === 'suspended') {
+                        // 监听一次全局点击/触摸来恢复
+                        const resumeAudio = () => {
+                            if (audioContext && audioContext.state === 'suspended') {
+                                audioContext.resume().then(() => {
+                                    console.log('AudioContext 已恢复');
+                                }).catch(e => console.warn);
+                            }
+                            document.removeEventListener('click', resumeAudio);
+                            document.removeEventListener('touchstart', resumeAudio);
+                        };
+                        document.addEventListener('click', resumeAudio, { once: true });
+                        document.addEventListener('touchstart', resumeAudio, { once: true });
                     }
-                } catch (error) {
-                    console.error('音频系统初始化失败:', error);
+                } else {
+                    console.warn('浏览器不支持 Web Audio');
                 }
+            } catch (error) {
+                console.error('音频初始化失败:', error);
             }
         }
+
         
         // 解锁音频
         function unlockAudio() {
@@ -828,53 +830,77 @@
             }
         }
         
-        // 播放音效
+        // 播放指定类型的音效（简短哔哔声）
         function playSound(type) {
             if (!soundEnabled) return;
+            if (!audioContext) {
+                initAudio();
+                if (!audioContext) return;
+            }
+            
+            // 确保音频上下文处于运行状态
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().catch(e => console.warn);
+                return;
+            }
             
             try {
-                let soundId;
+                const now = audioContext.currentTime;
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                
+                // 根据音效类型设置不同频率和时长
+                let frequency = 800;
+                let duration = 0.1;
+                let volume = 0.2;
+                
                 switch(type) {
                     case 'move':
-                        soundId = 'moveSound';
+                        frequency = 600;
+                        duration = 0.05;
+                        volume = 0.1;
                         break;
                     case 'rotate':
-                        soundId = 'rotateSound';
+                        frequency = 800;
+                        duration = 0.07;
+                        volume = 0.15;
                         break;
                     case 'drop':
-                        soundId = 'dropSound';
+                        frequency = 400;
+                        duration = 0.15;
+                        volume = 0.25;
                         break;
                     case 'line':
-                        soundId = 'lineSound';
+                        frequency = 1000;
+                        duration = 0.2;
+                        volume = 0.3;
                         break;
                     case 'gameOver':
-                        soundId = 'gameOverSound';
+                        frequency = 300;
+                        duration = 0.6;
+                        volume = 0.2;
                         break;
                     default:
                         return;
                 }
                 
-                const sound = document.getElementById(soundId);
-                if (sound) {
-                    // 移动端需要用户交互后解锁音频
-                    if (audioContext && audioContext.state === 'suspended') {
-                        audioContext.resume();
-                    }
-                    
-                    // 重置播放位置
-                    sound.currentTime = 0;
-                    
-                    // 播放声音
-                    const playPromise = sound.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(e => {
-                            console.log('音效播放失败:', e);
-                            initAudio();
-                        });
-                    }
-                }
+                osc.frequency.value = frequency;
+                gain.gain.setValueAtTime(volume, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+                
+                osc.start(now);
+                osc.stop(now + duration);
+                
+                // 自动清理
+                osc.onended = () => {
+                    osc.disconnect();
+                    gain.disconnect();
+                };
             } catch (error) {
-                console.error('播放音效失败:', error);
+                console.warn('播放音效失败:', error);
             }
         }
         
