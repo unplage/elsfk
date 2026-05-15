@@ -263,6 +263,8 @@
         #btnHold { grid-column: 1; grid-row: 1; font-size: 20px; }
         #btnHardDrop { grid-column: 3; grid-row: 1; font-size: 20px; }
         #gameOver, #leaderboardPanel {
+            max-height: 85vh;      /* 面板最多占屏幕高度的 85% */
+            overflow-y: auto;      /* 内容超出时显示垂直滚动条 */
             position: absolute;
             top: 50%;
             left: 50%;
@@ -349,7 +351,7 @@
             <div class="setting-group"><label><input type="checkbox" id="soundCheck"> 音效</label></div>
             <div class="setting-group"><label class="setting-label">游戏模式</label><select id="gameModeSelect"><option value="NORMAL">经典模式</option><option value="TIMED">限时模式 (60秒)</option></select></div>
             <div class="setting-group"><label class="setting-label">主题皮肤</label><select id="themeSelect" onchange="changeTheme(this.value)"><option value="default">默认(蓝)</option><option value="cyberpunk">赛博朋克</option><option value="forest">森林</option><option value="classic">经典黑白</option></select></div>
-            <div class="leaderboard-buttons"><button class="small-btn" onclick="showLeaderboard()">排行榜</button><button class="small-btn" onclick="saveSettings()">保存</button><button class="small-btn" onclick="toggleSettings()">关闭</button></div>
+            <div class="leaderboard-buttons"><button class="small-btn" onclick="saveSettings()">保存</button><button class="small-btn" onclick="showLeaderboard()">排行榜</button><button class="small-btn" onclick="toggleSettings()">关闭</button></div>
         </div>
     </div>
     <div id="touchControls">
