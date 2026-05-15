@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
-    <title>高级像素方块</title>
+    <title>终极方块 - 连击音效粒子主题</title>
     <link rel="manifest" href="./manifest.json">
     <style>
         * {
@@ -12,14 +12,13 @@
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
-        
         html, body {
             height: 100%;
             width: 100%;
             overflow: hidden;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            transition: background 0.3s ease;
         }
-        
         body {
             color: #fff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -27,7 +26,31 @@
             user-select: none;
             padding-bottom: env(safe-area-inset-bottom);
         }
-        
+        /* 主题皮肤变量 (动态更新) */
+        :root {
+            --panel-bg: rgba(0,0,0,0.6);
+            --border-color: rgba(79,195,247,0.3);
+            --accent: #4fc3f7;
+            --grid-bg: #0f1525;
+        }
+        .theme-cyberpunk {
+            --accent: #ff00cc;
+            --border-color: #ff00cc;
+            --grid-bg: #0a0a1a;
+            background: linear-gradient(135deg, #0a0a1a, #1a0033);
+        }
+        .theme-forest {
+            --accent: #2ecc71;
+            --border-color: #2ecc71;
+            --grid-bg: #0a1f0a;
+            background: linear-gradient(135deg, #0a2f0a, #1a3a1a);
+        }
+        .theme-classic {
+            --accent: #ffa500;
+            --border-color: #ffa500;
+            --grid-bg: #000000;
+            background: #000;
+        }
         #gameContainer {
             width: 100%;
             height: 100%;
@@ -37,7 +60,6 @@
             align-items: center;
             padding: 8px 8px 0;
         }
-        
         #topBar {
             width: 100%;
             display: flex;
@@ -47,12 +69,11 @@
             flex-shrink: 0;
             height: 40px;
             min-height: 40px;
-            background: rgba(0, 0, 0, 0.5);
+            background: var(--panel-bg);
             border-radius: 10px;
             padding: 0 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-color);
         }
-        
         #info {
             font-size: 14px;
             font-weight: bold;
@@ -64,25 +85,21 @@
             align-items: center;
             gap: 15px;
         }
-        
         .info-item {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        
         .info-label {
             font-size: 10px;
             opacity: 0.8;
             margin-bottom: 2px;
         }
-        
         .info-value {
             font-size: 16px;
-            color: #4fc3f7;
+            color: var(--accent);
             font-weight: bold;
         }
-        
         .small-btn {
             background: linear-gradient(145deg, #2d2d2d, #222);
             color: #fff;
@@ -100,12 +117,9 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             transition: all 0.1s ease;
         }
-        
         .small-btn:active {
             transform: translateY(1px);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
         }
-        
         #gameArea {
             flex: 1;
             display: flex;
@@ -118,12 +132,10 @@
             overflow: hidden;
             position: relative;
         }
-        
         #canvas {
             border: 3px solid rgba(0, 0, 0, 0.7);
             image-rendering: pixelated;
-            image-rendering: crisp-edges;
-            background: #0f1525;
+            background: var(--grid-bg);
             max-width: 100%;
             max-height: 60vh;
             width: auto;
@@ -132,112 +144,78 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             border-radius: 4px;
         }
-        
-        #nextPieceContainer {
+        #nextPieceContainer, #sidePanel {
             position: absolute;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            backdrop-filter: blur(5px);
+            z-index: 10;
+        }
+        #nextPieceContainer {
             top: 10px;
             right: 5px;
             width: 60px;
             height: 60px;
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(79, 195, 247, 0.3);
-            border-radius: 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 4px;
-            backdrop-filter: blur(5px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            z-index: 10;
         }
-
-        .next-piece-label {
-            font-size: 9px;
-            color: #4fc3f7;
-            margin-bottom: 2px;
-            text-shadow: 0 0 4px rgba(79, 195, 247, 0.5);
-            font-weight: bold;
-        }
-
-        #nextPieceCanvas {
-            width: 52px;
-            height: 52px;
-            border-radius: 4px;
-            background: rgba(0, 0, 0, 0.3);
-            display: block;
-        }
-        
         #sidePanel {
-            position: absolute;
             top: 10px;
             left: 0px;
             display: flex;
             flex-direction: column;
             gap: 4px;
-            background: rgba(0, 0, 0, 0.6);
             padding: 6px;
-            border-radius: 6px;
-            border: 1px solid rgba(79, 195, 247, 0.3);
-            backdrop-filter: blur(5px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            z-index: 10;
         }
-
-        .panel-title {
+        .panel-title, .next-piece-label {
             font-size: 9px;
-            color: #4fc3f7;
+            color: var(--accent);
             margin-bottom: 2px;
-            text-align: center;
             font-weight: bold;
+            text-align: center;
         }
-
-        #holdCanvas {
+        #nextPieceCanvas, #holdCanvas {
             width: 52px;
             height: 52px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
             background: rgba(0, 0, 0, 0.3);
             border-radius: 4px;
             display: block;
         }
-        
         #settingsPanel {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.95);
-            border: 2px solid rgba(79, 195, 247, 0.5);
+            border: 2px solid var(--accent);
             padding: 15px;
             border-radius: 12px;
             backdrop-filter: blur(10px);
             z-index: 50;
             min-width: 200px;
             max-width: 90vw;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
             display: none;
         }
-        
         .settings-title {
             font-size: 16px;
             font-weight: bold;
             text-align: center;
             margin-bottom: 12px;
-            color: #4fc3f7;
-            text-shadow: 0 0 8px rgba(79, 195, 247, 0.5);
+            color: var(--accent);
         }
-        
         .setting-group {
             margin-bottom: 12px;
         }
-        
         .setting-label {
             font-size: 13px;
             margin-bottom: 6px;
             display: block;
             color: #fff;
         }
-        
-        select {
+        select, .theme-btn {
             width: 100%;
             padding: 8px;
             border-radius: 6px;
@@ -245,13 +223,8 @@
             color: white;
             border: 1px solid #555;
             font-size: 13px;
-            outline: none;
+            margin-top: 4px;
         }
-        
-        select:focus {
-            border-color: #4fc3f7;
-        }
-        
         #touchControls {
             display: grid;
             grid-template-columns: 90px 90px 90px;
@@ -265,9 +238,7 @@
             flex-shrink: 0;
             border: 2px solid rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
         }
-        
         .touch-btn {
             background: linear-gradient(145deg, #2d2d2d, #222);
             color: #fff;
@@ -275,1877 +246,287 @@
             font-size: 26px;
             font-weight: bold;
             cursor: pointer;
-            touch-action: manipulation;
             border-radius: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0;
             user-select: none;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
             transition: all 0.1s ease;
         }
-        
         .touch-btn:active {
             transform: translateY(4px);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            background: linear-gradient(145deg, #222, #2d2d2d);
-            border-color: #4fc3f7;
+            border-color: var(--accent);
         }
-        
         #btnLeft { grid-column: 1; grid-row: 2; }
         #btnRight { grid-column: 3; grid-row: 2; }
-        #btnRotate { 
-            grid-column: 2; 
-            grid-row: 1; 
-            background: linear-gradient(145deg, #3d3d3d, #2d2d2d);
-        }
+        #btnRotate { grid-column: 2; grid-row: 1; }
         #btnDown { grid-column: 2; grid-row: 2; }
-        #btnHold { 
-            grid-column: 1; 
-            grid-row: 1; 
-            font-size: 20px;
-            background: linear-gradient(145deg, #3d3d3d, #2d2d2d);
-        }
-        #btnHardDrop { 
-            grid-column: 3; 
-            grid-row: 1; 
-            font-size: 20px;
-            background: linear-gradient(145deg, #3d3d3d, #2d2d2d);
-        }
-        
-        #gameOver {
+        #btnHold { grid-column: 1; grid-row: 1; font-size: 20px; }
+        #btnHardDrop { grid-column: 3; grid-row: 1; font-size: 20px; }
+        #gameOver, #leaderboardPanel {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.95);
-            border: 2px solid #4fc3f7;
+            border: 2px solid var(--accent);
             padding: 30px 25px;
             text-align: center;
             display: none;
             z-index: 100;
-            box-shadow: 0 0 40px rgba(79, 195, 247, 0.3);
             border-radius: 15px;
             min-width: 320px;
             max-width: 90vw;
             backdrop-filter: blur(10px);
         }
-        
-        #gameOver h2 {
-            font-size: 28px;
-            margin-bottom: 20px;
-            color: #4fc3f7;
-            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
-        }
-        
-        #finalScore {
-            font-size: 24px;
-            margin: 15px 0;
-            color: #ffeb3b;
-            font-weight: bold;
-        }
-        
-        #recordsPanel {
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .records-title {
-            font-size: 16px;
-            color: #4fc3f7;
-            margin-bottom: 12px;
-            text-align: center;
-            font-weight: bold;
-        }
-        
-        .record-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .record-rank {
-            width: 30px;
-            text-align: center;
-            font-weight: bold;
-            color: #ffeb3b;
-            font-size: 16px;
-        }
-        
-        .record-score {
-            flex: 1;
-            text-align: center;
-            font-weight: bold;
-            font-size: 16px;
-            color: #fff;
-        }
-        
-        .record-details {
-            width: 120px;
-            text-align: right;
-            font-size: 12px;
-            opacity: 0.8;
-        }
-        
-        .record-date {
-            display: block;
-        }
-        
-        .record-time {
-            display: block;
-        }
-        
-        #leaderboardPanel {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
-            border: 2px solid #4fc3f7;
-            padding: 30px 25px;
-            text-align: center;
-            display: none;
-            z-index: 101;
-            box-shadow: 0 0 40px rgba(79, 195, 247, 0.3);
-            border-radius: 15px;
-            min-width: 350px;
-            max-width: 90vw;
-            backdrop-filter: blur(10px);
-        }
-        
-        #leaderboardPanel h2 {
-            font-size: 24px;
-            margin-bottom: 20px;
-            color: #4fc3f7;
-        }
-        
-        #leaderboardList {
-            max-height: 300px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-        }
-        
         .leaderboard-buttons {
             display: flex;
             justify-content: center;
             gap: 12px;
             flex-wrap: wrap;
+            margin-top: 20px;
         }
-        
-        @media (max-height: 700px) {
-            #nextPieceContainer, #sidePanel {
-                width: 55px;
-                height: 55px;
-                padding: 3px;
-            }
-            #nextPieceCanvas, #holdCanvas {
-                width: 47px;
-                height: 47px;
-            }
-            .next-piece-label, .panel-title {
-                font-size: 8px;
-            }
+        .combo-pop {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffeb3b;
+            text-shadow: 0 0 8px red;
+            pointer-events: none;
+            z-index: 200;
+            animation: comboFloat 1s ease-out forwards;
         }
-        
+        @keyframes comboFloat {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(0.8); }
+            100% { opacity: 0; transform: translate(-50%, -80%) scale(1.5); }
+        }
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            width: 6px;
+            height: 6px;
+            background: #ff0;
+            border-radius: 50%;
+            animation: particleFly 0.6s ease-out forwards;
+        }
+        @keyframes particleFly {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
         @media (max-height: 600px) {
-            #touchControls {
-                grid-template-columns: 80px 80px 80px;
-                grid-template-rows: 60px 60px;
-                gap: 8px;
-                padding: 12px;
-            }
-            .touch-btn {
-                font-size: 22px;
-            }
-            #btnHold, #btnHardDrop {
-                font-size: 16px;
-            }
-            #canvas {
-                max-height: 50vh;
-            }
-            #nextPieceContainer, #sidePanel {
-                display: none !important;
-            }
-        }
-        
-        @media (max-width: 400px) {
-            #touchControls {
-                grid-template-columns: 75px 75px 75px;
-                grid-template-rows: 60px 60px;
-            }
-            #topBar {
-                padding: 0 8px;
-            }
-            .info-item {
-                min-width: 50px;
-            }
-            #gameOver, #leaderboardPanel {
-                min-width: 280px;
-                padding: 20px 15px;
-            }
-        }
-        
-        /* 方块颜色 */
-        .color-1 { background-color: #00bcd4; } /* I型 - 青色 */
-        .color-2 { background-color: #ff9800; } /* O型 - 橙色 */
-        .color-3 { background-color: #9c27b0; } /* T型 - 紫色 */
-        .color-4 { background-color: #4caf50; } /* S型 - 绿色 */
-        .color-5 { background-color: #f44336; } /* Z型 - 红色 */
-        .color-6 { background-color: #2196f3; } /* J型 - 蓝色 */
-        .color-7 { background-color: #ffeb3b; } /* L型 - 黄色 */
-        
-        /* 自定义滚动条 */
-        #recordsPanel::-webkit-scrollbar,
-        #leaderboardList::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        #recordsPanel::-webkit-scrollbar-track,
-        #leaderboardList::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-        }
-        
-        #recordsPanel::-webkit-scrollbar-thumb,
-        #leaderboardList::-webkit-scrollbar-thumb {
-            background: #4fc3f7;
-            border-radius: 4px;
-        }
-        
-        #recordsPanel::-webkit-scrollbar-thumb:hover,
-        #leaderboardList::-webkit-scrollbar-thumb:hover {
-            background: #29b6f6;
+            #touchControls { grid-template-columns: 80px 80px 80px; grid-template-rows: 60px 60px; padding: 12px; }
+            .touch-btn { font-size: 22px; }
+            #nextPieceContainer, #sidePanel { display: none !important; }
         }
     </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <div id="topBar">
-            <button class="small-btn" onclick="toggleSettings()">设置</button>
-            <div id="info">
-                <div class="info-item">
-                    <div class="info-label">分数</div>
-                    <div class="info-value" id="score">0</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">等级</div>
-                    <div class="info-value" id="level">1</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">消除</div>
-                    <div class="info-value" id="lines">0</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">最高分</div>
-                    <div class="info-value" id="highScore">0</div>
-                </div>
-            </div>
-            <button class="small-btn" onclick="togglePause()" id="pauseBtn">暂停</button>
+<div id="gameContainer">
+    <div id="topBar">
+        <button class="small-btn" onclick="toggleSettings()">设置</button>
+        <div id="info">
+            <div class="info-item"><div class="info-label">分数</div><div class="info-value" id="score">0</div></div>
+            <div class="info-item"><div class="info-label">等级</div><div class="info-value" id="level">1</div></div>
+            <div class="info-item"><div class="info-label">消除</div><div class="info-value" id="lines">0</div></div>
+            <div class="info-item"><div class="info-label">连击</div><div class="info-value" id="combo">0</div></div>
+            <div class="info-item" id="timerDisplay" style="display:none;"><div class="info-label">剩余</div><div class="info-value" id="timer">00:00</div></div>
+            <div class="info-item"><div class="info-label">最高</div><div class="info-value" id="highScore">0</div></div>
         </div>
-        
-        <div id="gameArea">
-            <canvas id="canvas"></canvas>
-            
-            <div id="sidePanel">
-                <div class="panel-title">暂存</div>
-                <canvas id="holdCanvas"></canvas>
-            </div>
-            
-            <div id="nextPieceContainer">
-                <div class="next-piece-label">下一个</div>
-                <canvas id="nextPieceCanvas"></canvas>
-            </div>
-            
-            <div id="settingsPanel">
-                <div class="settings-title">游戏设置</div>
-                <div class="setting-group">
-                    <label class="setting-label">难度等级</label>
-                    <select id="difficultySelect" onchange="changeDifficulty(this.value)">
-                        <option value="EASY">简单</option>
-                        <option value="NORMAL" selected>普通</option>
-                        <option value="HARD">困难</option>
-                        <option value="EXPERT">专家</option>
-                    </select>
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">网格尺寸</label>
-                    <select id="gridSizeSelect" onchange="changeGridSize(this.value)">
-                        <option value="10x20">小 (10x20)</option>
-                        <option value="12x24" selected>中 (12x24)</option>
-                        <option value="15x30">大 (15x30)</option>
-                    </select>
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">方块生成模式</label>
-                    <select id="pieceModeSelect" onchange="changePieceMode(this.value)">
-                        <option value="BAG7" selected>7袋模式</option>
-                        <option value="RANDOM">完全随机</option>
-                        <option value="MEMORY">记忆模式</option>
-                    </select>
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">
-                        <input type="checkbox" id="ghostPieceCheck" onchange="toggleGhostPiece(this.checked)" checked>
-                        显示影子方块
-                    </label>
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">
-                        <input type="checkbox" id="soundCheck" onchange="toggleSound(this.checked)">
-                        开启音效
-                    </label>
-                </div>
-                <div class="leaderboard-buttons">
-                    <button class="small-btn" onclick="showLeaderboard()">排行榜</button>
-                    <button class="small-btn" onclick="saveSettings()">保存</button>
-                </div>
-            </div>
-        </div>
-        
-        <div id="touchControls">
-            <button class="touch-btn" id="btnHold">暂存</button>
-            <button class="touch-btn" id="btnRotate">↻</button>
-            <button class="touch-btn" id="btnHardDrop">↓↓</button>
-            <button class="touch-btn" id="btnLeft">←</button>
-            <button class="touch-btn" id="btnDown">↓</button>
-            <button class="touch-btn" id="btnRight">→</button>
+        <button class="small-btn" onclick="togglePause()" id="pauseBtn">暂停</button>
+    </div>
+    <div id="gameArea">
+        <canvas id="canvas"></canvas>
+        <div id="sidePanel"><div class="panel-title">暂存</div><canvas id="holdCanvas"></canvas></div>
+        <div id="nextPieceContainer"><div class="next-piece-label">下一个</div><canvas id="nextPieceCanvas"></canvas></div>
+        <div id="settingsPanel">
+            <div class="settings-title">游戏设置</div>
+            <div class="setting-group"><label class="setting-label">难度</label><select id="difficultySelect" onchange="changeDifficulty(this.value)"><option value="EASY">简单</option><option value="NORMAL" selected>普通</option><option value="HARD">困难</option><option value="EXPERT">专家</option></select></div>
+            <div class="setting-group"><label class="setting-label">网格尺寸</label><select id="gridSizeSelect" onchange="changeGridSize(this.value)"><option value="10x20">小 (10x20)</option><option value="12x24" selected>中 (12x24)</option><option value="15x30">大 (15x30)</option></select></div>
+            <div class="setting-group"><label class="setting-label">生成模式</label><select id="pieceModeSelect" onchange="changePieceMode(this.value)"><option value="BAG7" selected>7袋模式</option><option value="RANDOM">完全随机</option></select></div>
+            <div class="setting-group"><label><input type="checkbox" id="ghostPieceCheck" checked> 显示影子</label></div>
+            <div class="setting-group"><label><input type="checkbox" id="soundCheck"> 音效</label></div>
+            <div class="setting-group"><label class="setting-label">游戏模式</label><select id="gameModeSelect"><option value="NORMAL">经典模式</option><option value="TIMED">限时模式 (60秒)</option></select></div>
+            <div class="setting-group"><label class="setting-label">主题皮肤</label><select id="themeSelect" onchange="changeTheme(this.value)"><option value="default">默认(蓝)</option><option value="cyberpunk">赛博朋克</option><option value="forest">森林</option><option value="classic">经典黑白</option></select></div>
+            <div class="leaderboard-buttons"><button class="small-btn" onclick="saveSettings()">保存</button><button class="small-btn" onclick="toggleSettings()">关闭</button></div>
         </div>
     </div>
-    
-    <div id="gameOver">
-        <h2>游戏结束</h2>
-        <div>最终分数: <span id="finalScore">0</span></div>
-        <div>消除行数: <span id="finalLines">0</span></div>
-        <div>最高等级: <span id="finalLevel">1</span></div>
-        
-        <div id="recordsPanel">
-            <div class="records-title">本次游戏排行榜</div>
-            <div id="recordsList">
-                <!-- 记录将通过JS动态生成 -->
-            </div>
-        </div>
-        
-        <div class="leaderboard-buttons" style="margin-top: 20px;">
-            <button class="small-btn" onclick="restart()" style="padding: 12px 25px; font-size: 16px;">再玩一次</button>
-            <button class="small-btn" onclick="showLeaderboard()" style="padding: 12px 20px; font-size: 14px;">历史排行榜</button>
-            <button class="small-btn" onclick="toggleSettings()" style="padding: 12px 20px; font-size: 14px;">游戏设置</button>
-        </div>
+    <div id="touchControls">
+        <button class="touch-btn" id="btnHold">暂存</button>
+        <button class="touch-btn" id="btnRotate">↻</button>
+        <button class="touch-btn" id="btnHardDrop">↓↓</button>
+        <button class="touch-btn" id="btnLeft">←</button>
+        <button class="touch-btn" id="btnDown">↓</button>
+        <button class="touch-btn" id="btnRight">→</button>
     </div>
-    
-    <div id="leaderboardPanel">
-        <h2>历史排行榜</h2>
-        <div id="leaderboardList">
-            <!-- 排行榜数据将通过JS动态生成 -->
-        </div>
-        <div class="leaderboard-buttons">
-            <button class="small-btn" onclick="hideLeaderboard()" style="padding: 10px 20px; font-size: 14px;">返回游戏</button>
-            <button class="small-btn" onclick="clearAllRecords()" style="padding: 10px 20px; font-size: 14px;">清空记录</button>
-        </div>
-    </div>
+</div>
+<div id="gameOver"><h2>游戏结束</h2><div>最终分数: <span id="finalScore">0</span></div><div class="leaderboard-buttons"><button class="small-btn" onclick="restart()">再玩一次</button><button class="small-btn" onclick="toggleSettings()">设置</button></div></div>
+<div id="leaderboardPanel"><h2>排行榜</h2><div id="leaderboardList"></div><div class="leaderboard-buttons"><button class="small-btn" onclick="hideLeaderboard()">返回</button><button class="small-btn" onclick="clearAllRecords()">清空记录</button></div></div>
 
-
-    <script>
-        // IndexedDB数据库配置
-        const DB_NAME = 'TetrisGameDB';
-        const DB_VERSION = 1;
-        const RECORD_STORE = 'gameRecords';
-        const SETTINGS_STORE = 'gameSettings';
-        
-        let db = null;
-        let highScore = 0;
-        
-        // 游戏配置
-        const DIFFICULTY = {
-            EASY: { speed: 1000, name: '简单', scoreMultiplier: 0.8 },
-            NORMAL: { speed: 600, name: '普通', scoreMultiplier: 1.0 },
-            HARD: { speed: 350, name: '困难', scoreMultiplier: 1.5 },
-            EXPERT: { speed: 200, name: '专家', scoreMultiplier: 2.0 }
-        };
-        
-        // 网格尺寸配置
-        const GRID_SIZES = {
-            '10x20': { cols: 10, rows: 20, blockSize: 24 },
-            '12x24': { cols: 12, rows: 24, blockSize: 20 },
-            '15x30': { cols: 15, rows: 30, blockSize: 16 }
-        };
-        
-        // 方块形状定义（带颜色）
-        const SHAPES = [
-            { shape: [[1,1,1,1]], color: 1, name: 'I' }, // I型
-            { shape: [[1,1],[1,1]], color: 2, name: 'O' }, // O型
-            { shape: [[0,1,0],[1,1,1]], color: 3, name: 'T' }, // T型
-            { shape: [[0,1,1],[1,1,0]], color: 4, name: 'S' }, // S型
-            { shape: [[1,1,0],[0,1,1]], color: 5, name: 'Z' }, // Z型
-            { shape: [[1,0,0],[1,1,1]], color: 6, name: 'J' }, // J型
-            { shape: [[0,0,1],[1,1,1]], color: 7, name: 'L' }  // L型
-        ];
-        
-        // 游戏状态
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const holdCanvas = document.getElementById('holdCanvas');
-        const holdCtx = holdCanvas.getContext('2d');
-        const nextPieceCanvas = document.getElementById('nextPieceCanvas');
-        const nextPieceCtx = nextPieceCanvas.getContext('2d');
-        
-        let COLS = 12;
-        let ROWS = 24;
-        let BLOCK_SIZE = 20;
-        let board = [];
-        let currentPiece = null;
-        let nextPiece = null;
-        let heldPiece = null;
-        let canHold = true;
-        let currentX = 0;
-        let currentY = 0;
-        let score = 0;
-        let level = 1;
-        let lines = 0;
-        let dropSpeed = DIFFICULTY.NORMAL.speed;
-        let currentDifficulty = 'NORMAL';
-        let gameRunning = true;
-        let isPaused = false;
-        let lastDrop = 0;
-        let ghostPieceY = 0;
-        let showGhostPiece = true;
-        let pieceGenerationMode = 'BAG7';
-        let soundEnabled = false;
-        
-        // 7袋模式变量
-        let bag = [];
-        let nextBag = [];
-        
-        // 软移/软降相关变量
-        let softMoveTimeout = null;
-        let softMoveInterval = null;
-        let softMoveDirection = 0;
-        const LONG_PRESS_DELAY = 150;
-        const MOVE_REPEAT_INTERVAL = 80;
-        
-        // 软降相关变量
-        let softDropInterval = null;
-        let isSoftDropping = false;
-        
-        // 音效相关
-        let audioContext = null;
-        let audioInitialized = false;
-        let animationFrameId = null;
-        
-        // 初始化IndexedDB数据库
-        function initDatabase() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                
-                request.onerror = (event) => {
-                    console.error('数据库打开失败:', event.target.error);
-                    reject(event.target.error);
-                };
-                
-                request.onsuccess = (event) => {
-                    db = event.target.result;
-                    console.log('数据库打开成功');
-                    
-                    // 加载最高分和设置
-                    loadHighScore();
-                    loadSettings();
-                    
-                    resolve(db);
-                };
-                
-                request.onupgradeneeded = (event) => {
-                    db = event.target.result;
-                    
-                    // 创建游戏记录存储
-                    if (!db.objectStoreNames.contains(RECORD_STORE)) {
-                        const recordStore = db.createObjectStore(RECORD_STORE, { keyPath: 'id', autoIncrement: true });
-                        recordStore.createIndex('score', 'score', { unique: false });
-                        recordStore.createIndex('date', 'date', { unique: false });
-                        console.log('游戏记录存储创建成功');
-                    }
-                    
-                    // 创建游戏设置存储
-                    if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
-                        db.createObjectStore(SETTINGS_STORE, { keyPath: 'key' });
-                        console.log('游戏设置存储创建成功');
-                    }
-                };
-            });
-        }
-        
-
-        // 初始化音频上下文（需用户交互后启动）
-        function initAudio() {
-            if (audioInitialized) return;
-            try {
-                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                if (AudioContextClass) {
-                    audioContext = new AudioContextClass();
-                    // 创建简单的短促振荡器函数
-                    audioInitialized = true;
-                    console.log('Web Audio 已就绪');
-                    
-                    // 移动端需要用户交互才能启动，先挂起，在第一次播放时恢复
-                    if (audioContext.state === 'suspended') {
-                        // 监听一次全局点击/触摸来恢复
-                        const resumeAudio = () => {
-                            if (audioContext && audioContext.state === 'suspended') {
-                                audioContext.resume().then(() => {
-                                    console.log('AudioContext 已恢复');
-                                }).catch(e => console.warn);
-                            }
-                            document.removeEventListener('click', resumeAudio);
-                            document.removeEventListener('touchstart', resumeAudio);
-                        };
-                        document.addEventListener('click', resumeAudio, { once: true });
-                        document.addEventListener('touchstart', resumeAudio, { once: true });
-                    }
-                } else {
-                    console.warn('浏览器不支持 Web Audio');
-                }
-            } catch (error) {
-                console.error('音频初始化失败:', error);
+<script>
+    // ---------- 数据库 & 全局变量 ----------
+    const DB_NAME = 'TetrisGameDB';
+    const DB_VERSION = 1;
+    const RECORD_STORE = 'gameRecords';
+    const SETTINGS_STORE = 'gameSettings';
+    let db = null, highScore = 0;
+    const DIFFICULTY = { EASY:{ speed:1000, scoreMultiplier:0.8 }, NORMAL:{ speed:600, scoreMultiplier:1.0 }, HARD:{ speed:350, scoreMultiplier:1.5 }, EXPERT:{ speed:200, scoreMultiplier:2.0 } };
+    const GRID_SIZES = { '10x20':{ cols:10, rows:20, blockSize:24 }, '12x24':{ cols:12, rows:24, blockSize:20 }, '15x30':{ cols:15, rows:30, blockSize:16 } };
+    const SHAPES = [
+        { shape:[[1,1,1,1]], color:1, name:'I' }, { shape:[[1,1],[1,1]], color:2, name:'O' }, { shape:[[0,1,0],[1,1,1]], color:3, name:'T' },
+        { shape:[[0,1,1],[1,1,0]], color:4, name:'S' }, { shape:[[1,1,0],[0,1,1]], color:5, name:'Z' },
+        { shape:[[1,0,0],[1,1,1]], color:6, name:'J' }, { shape:[[0,0,1],[1,1,1]], color:7, name:'L' }
+    ];
+    let canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+    let holdCanvas = document.getElementById('holdCanvas'), holdCtx = holdCanvas.getContext('2d');
+    let nextPieceCanvas = document.getElementById('nextPieceCanvas'), nextPieceCtx = nextPieceCanvas.getContext('2d');
+    let COLS=12, ROWS=24, BLOCK_SIZE=20, board=[], currentPiece=null, nextPiece=null, heldPiece=null, canHold=true, currentX=0, currentY=0;
+    let score=0, level=1, lines=0, dropSpeed=600, currentDifficulty='NORMAL', gameRunning=true, isPaused=false, lastDrop=0, ghostPieceY=0, showGhostPiece=true, pieceGenerationMode='BAG7', soundEnabled=false;
+    let bag=[], softMoveTimeout=null, softMoveInterval=null, softMoveDirection=0, LONG_PRESS_DELAY=150, MOVE_REPEAT_INTERVAL=80;
+    let softDropInterval=null, isSoftDropping=false;
+    // 音效 (Web Audio)
+    let audioContext=null, audioInitialized=false, animationFrameId=null;
+    // Combo连击系统
+    let comboCount=0, lastClearFrame=0;
+    // 限时模式
+    let gameMode='NORMAL', timeRemaining=60, timerInterval=null;
+    // 粒子特效队列
+    let particles=[];
+    // 主题皮肤
+    let currentTheme='default';
+    // 主题映射函数
+    function changeTheme(theme) {
+        currentTheme = theme;
+        document.body.className = '';
+        if(theme === 'cyberpunk') document.body.classList.add('theme-cyberpunk');
+        else if(theme === 'forest') document.body.classList.add('theme-forest');
+        else if(theme === 'classic') document.body.classList.add('theme-classic');
+        document.documentElement.style.setProperty('--accent', getComputedStyle(document.body).getPropertyValue('--accent'));
+        draw(); drawHoldPiece(); drawNextPiece(nextPiece);
+    }
+    // 辅助函数
+    function getLocalDateString(){ let d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+    // 初始化数据库 (略简化，保留原有逻辑)
+    function initDatabase(){ return new Promise((resolve,reject)=>{ let req=indexedDB.open(DB_NAME,DB_VERSION); req.onerror=e=>reject(e.target.error); req.onsuccess=e=>{ db=e.target.result; loadHighScore(); loadSettings(); resolve(db); }; req.onupgradeneeded=e=>{ let db=e.target.result; if(!db.objectStoreNames.contains(RECORD_STORE)) db.createObjectStore(RECORD_STORE,{keyPath:'id',autoIncrement:true}); if(!db.objectStoreNames.contains(SETTINGS_STORE)) db.createObjectStore(SETTINGS_STORE,{keyPath:'key'}); }; }); }
+    function loadHighScore(){ if(!db)return; let tx=db.transaction([SETTINGS_STORE],'readonly'),store=tx.objectStore(SETTINGS_STORE),req=store.get('highScore'); req.onsuccess=()=>{ if(req.result){ highScore=req.result.value; document.getElementById('highScore').textContent=highScore; } }; }
+    function saveHighScore(){ if(!db)return; let tx=db.transaction([SETTINGS_STORE],'readwrite'),store=tx.objectStore(SETTINGS_STORE); store.put({key:'highScore',value:highScore}); }
+    function saveGameRecord(){ if(!db)return; let tx=db.transaction([RECORD_STORE],'readwrite'),store=tx.objectStore(RECORD_STORE); store.add({ score, lines, level, date:getLocalDateString(), time:new Date().toLocaleTimeString(), difficulty:currentDifficulty, gridSize:`${COLS}x${ROWS}`, timestamp:Date.now() }); if(score>highScore){ highScore=score; saveHighScore(); document.getElementById('highScore').textContent=highScore; } }
+    function getLeaderboard(limit=10){ return new Promise((resolve)=>{ if(!db) resolve([]); let tx=db.transaction([RECORD_STORE],'readonly'),store=tx.objectStore(RECORD_STORE),index=store.index('score'),req=index.openCursor(null,'prev'),records=[]; req.onsuccess=e=>{ let c=e.target.result; if(c && records.length<limit){ records.push(c.value); c.continue(); } else resolve(records); }; }); }
+    async function showLeaderboard(){ let records=await getLeaderboard(50); let html=records.map((r,i)=>`<div class="record-item"><div class="record-rank">${i+1}</div><div class="record-score">${r.score}分</div></div>`).join(''); document.getElementById('leaderboardList').innerHTML=html||'暂无'; document.getElementById('leaderboardPanel').style.display='block'; }
+    function hideLeaderboard(){ document.getElementById('leaderboardPanel').style.display='none'; }
+    function clearAllRecords(){ if(confirm('清空所有记录？')){ let tx=db.transaction([RECORD_STORE],'readwrite'); tx.objectStore(RECORD_STORE).clear(); alert('已清空'); showLeaderboard(); } }
+    function loadSettings(){ if(!db)return; let tx=db.transaction([SETTINGS_STORE],'readonly'),store=tx.objectStore(SETTINGS_STORE),req=store.get('gameSettings'); req.onsuccess=()=>{ if(req.result){ let s=req.result.value; currentDifficulty=s.difficulty||'NORMAL'; pieceGenerationMode=s.pieceMode||'BAG7'; showGhostPiece=s.showGhostPiece!==false; soundEnabled=s.soundEnabled||false; gameMode=s.gameMode||'NORMAL'; currentTheme=s.theme||'default'; changeTheme(currentTheme); let gridSize=s.gridSize||'12x24'; applyGridSize(gridSize); document.getElementById('difficultySelect').value=currentDifficulty; document.getElementById('pieceModeSelect').value=pieceGenerationMode; document.getElementById('gridSizeSelect').value=gridSize; document.getElementById('ghostPieceCheck').checked=showGhostPiece; document.getElementById('soundCheck').checked=soundEnabled; document.getElementById('gameModeSelect').value=gameMode; dropSpeed=DIFFICULTY[currentDifficulty].speed; if(soundEnabled) initAudio(); if(gameMode==='TIMED'){ document.getElementById('timerDisplay').style.display='flex'; timeRemaining=60; updateTimerDisplay(); if(timerInterval) clearInterval(timerInterval); } else document.getElementById('timerDisplay').style.display='none'; } }; }
+    function saveSettings(){ let settings={ difficulty:document.getElementById('difficultySelect').value, pieceMode:document.getElementById('pieceModeSelect').value, gridSize:document.getElementById('gridSizeSelect').value, showGhostPiece:document.getElementById('ghostPieceCheck').checked, soundEnabled:document.getElementById('soundCheck').checked, gameMode:document.getElementById('gameModeSelect').value, theme:currentTheme }; let tx=db.transaction([SETTINGS_STORE],'readwrite'); tx.objectStore(SETTINGS_STORE).put({key:'gameSettings',value:settings}); currentDifficulty=settings.difficulty; pieceGenerationMode=settings.pieceMode; showGhostPiece=settings.showGhostPiece; soundEnabled=settings.soundEnabled; gameMode=settings.gameMode; applyGridSize(settings.gridSize); dropSpeed=DIFFICULTY[currentDifficulty].speed; if(soundEnabled) initAudio(); if(gameMode==='TIMED'){ document.getElementById('timerDisplay').style.display='flex'; if(!timerInterval && gameRunning && !isPaused) startTimer(); } else { document.getElementById('timerDisplay').style.display='none'; if(timerInterval){ clearInterval(timerInterval); timerInterval=null; } } document.getElementById('settingsPanel').style.display='none'; restart(); alert('设置已保存'); }
+    // 核心游戏逻辑
+    function applyGridSize(sizeKey){ let size=GRID_SIZES[sizeKey]; COLS=size.cols; ROWS=size.rows; BLOCK_SIZE=size.blockSize; updateCanvasSize(); resetBoard(); }
+    function updateCanvasSize(){ canvas.width=COLS*BLOCK_SIZE; canvas.height=ROWS*BLOCK_SIZE; let maxHeight=window.innerHeight*0.6; if(canvas.height>maxHeight){ let scale=maxHeight/canvas.height; canvas.style.width=(canvas.width*scale)+'px'; canvas.style.height=(canvas.height*scale)+'px'; } else { canvas.style.width='auto'; canvas.style.height='auto'; } resetBoard(); }
+    function resetBoard(){ board=Array(ROWS).fill().map(()=>Array(COLS).fill(0)); }
+    function initBags(){ bag=[]; refillBag(bag); }
+    function refillBag(bagArray){ let indices=[0,1,2,3,4,5,6]; for(let i=indices.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [indices[i],indices[j]]=[indices[j],indices[i]]; } indices.forEach(idx=>bagArray.push({...SHAPES[idx]})); }
+    function getNextPiece(){ let piece; if(pieceGenerationMode==='BAG7'){ if(bag.length===0) refillBag(bag); piece=bag.shift(); } else { let idx=Math.floor(Math.random()*SHAPES.length); piece={...SHAPES[idx]}; } drawNextPiece(piece); return piece; }
+    function changePieceMode(mode){ pieceGenerationMode=mode; if(mode==='BAG7') initBags(); }
+    function spawnPiece(){ currentPiece=nextPiece; currentX=Math.floor((COLS-currentPiece.shape[0].length)/2); currentY=0; nextPiece=getNextPiece(); canHold=true; updateGhostPiece(); if(collide(currentX,currentY,currentPiece)) gameOver(); }
+    function updateGhostPiece(){ if(!currentPiece) return; ghostPieceY=currentY; while(!collide(currentX,ghostPieceY+1,currentPiece)) ghostPieceY++; }
+    function collide(x,y,piece){ for(let py=0;py<piece.shape.length;py++) for(let px=0;px<piece.shape[py].length;px++) if(piece.shape[py][px]){ let nx=x+px, ny=y+py; if(nx<0||nx>=COLS||ny>=ROWS) return true; if(ny>=0 && board[ny][nx]) return true; } return false; }
+    function rotate(piece){ let rows=piece.shape.length, cols=piece.shape[0].length; let rotated=Array(cols).fill().map(()=>Array(rows).fill(0)); for(let y=0;y<rows;y++) for(let x=0;x<cols;x++) rotated[x][rows-1-y]=piece.shape[y][x]; return {...piece, shape:rotated}; }
+    function merge(){ for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++) if(currentPiece.shape[y][x]) board[currentY+y][currentX+x]=currentPiece.color; playSound('drop'); }
+    // 消除行 + Combo + 粒子特效
+    function clearLines(){
+        let linesCleared=0;
+        for(let y=ROWS-1;y>=0;y--){
+            if(board[y].every(cell=>cell)){
+                // 粒子特效: 在消除行生成粒子
+                for(let x=0;x<COLS;x++) createParticle(x*BLOCK_SIZE+BLOCK_SIZE/2, y*BLOCK_SIZE+BLOCK_SIZE/2);
+                board.splice(y,1);
+                board.unshift(Array(COLS).fill(0));
+                linesCleared++;
+                y++;
             }
         }
-
-        
-        
-        // 播放指定类型的音效（简短哔哔声）
-        function playSound(type) {
-            if (!soundEnabled) return;
-            if (!audioContext) {
-                initAudio();
-                if (!audioContext) return;
-            }
-            
-            // 确保音频上下文处于运行状态
-            if (audioContext.state === 'suspended') {
-                audioContext.resume().catch(e => console.warn);
-                return;
-            }
-            
-            try {
-                const now = audioContext.currentTime;
-                const osc = audioContext.createOscillator();
-                const gain = audioContext.createGain();
-                
-                osc.connect(gain);
-                gain.connect(audioContext.destination);
-                
-                // 根据音效类型设置不同频率和时长
-                let frequency = 800;
-                let duration = 0.1;
-                let volume = 0.2;
-                
-                switch(type) {
-                    case 'move':
-                        frequency = 600;
-                        duration = 0.05;
-                        volume = 0.1;
-                        break;
-                    case 'rotate':
-                        frequency = 800;
-                        duration = 0.07;
-                        volume = 0.15;
-                        break;
-                    case 'drop':
-                        frequency = 400;
-                        duration = 0.15;
-                        volume = 0.25;
-                        break;
-                    case 'line':
-                        frequency = 1000;
-                        duration = 0.2;
-                        volume = 0.3;
-                        break;
-                    case 'gameOver':
-                        frequency = 300;
-                        duration = 0.6;
-                        volume = 0.2;
-                        break;
-                    default:
-                        return;
-                }
-                
-                osc.frequency.value = frequency;
-                gain.gain.setValueAtTime(volume, now);
-                gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-                
-                osc.start(now);
-                osc.stop(now + duration);
-                
-                // 自动清理
-                osc.onended = () => {
-                    osc.disconnect();
-                    gain.disconnect();
-                };
-            } catch (error) {
-                console.warn('播放音效失败:', error);
-            }
-        }
-        
-        // 保存游戏记录到IndexedDB
-        function saveGameRecord() {
-            if (!db) return;
-            
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([RECORD_STORE], 'readwrite');
-                const store = transaction.objectStore(RECORD_STORE);
-                
-                const record = {
-                    score: score,
-                    lines: lines,
-                    level: level,
-                    date: new Date().toISOString().split('T')[0],
-                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                    difficulty: currentDifficulty,
-                    gridSize: `${COLS}x${ROWS}`,
-                    timestamp: Date.now()
-                };
-                
-                const request = store.add(record);
-                
-                request.onsuccess = () => {
-                    console.log('游戏记录保存成功');
-                    
-                    if (score > highScore) {
-                        highScore = score;
-                        saveHighScore();
-                        document.getElementById('highScore').textContent = highScore;
-                    }
-                    
-                    resolve(request.result);
-                };
-                
-                request.onerror = (event) => {
-                    console.error('游戏记录保存失败:', event.target.error);
-                    reject(event.target.error);
-                };
-            });
-        }
-        
-        // 加载最高分
-        function loadHighScore() {
-            if (!db) return;
-            
-            const transaction = db.transaction([SETTINGS_STORE], 'readonly');
-            const store = transaction.objectStore(SETTINGS_STORE);
-            const request = store.get('highScore');
-            
-            request.onsuccess = () => {
-                if (request.result) {
-                    highScore = request.result.value;
-                    document.getElementById('highScore').textContent = highScore;
-                }
-            };
-        }
-        
-        // 保存最高分
-        function saveHighScore() {
-            if (!db) return;
-            
-            const transaction = db.transaction([SETTINGS_STORE], 'readwrite');
-            const store = transaction.objectStore(SETTINGS_STORE);
-            const request = store.put({ key: 'highScore', value: highScore });
-            
-            request.onerror = (event) => {
-                console.error('最高分保存失败:', event.target.error);
-            };
-        }
-        
-        // 加载游戏设置
-        function loadSettings() {
-            if (!db) return;
-            
-            const transaction = db.transaction([SETTINGS_STORE], 'readonly');
-            const store = transaction.objectStore(SETTINGS_STORE);
-            const request = store.get('gameSettings');
-            
-            request.onsuccess = () => {
-                if (request.result) {
-                    const settings = request.result.value;
-                    
-                    currentDifficulty = settings.difficulty || 'NORMAL';
-                    pieceGenerationMode = settings.pieceMode || 'BAG7';
-                    showGhostPiece = settings.showGhostPiece !== false;
-                    soundEnabled = settings.soundEnabled || false;
-                    
-                    // 应用网格尺寸
-                    const gridSize = settings.gridSize || '12x24';
-                    applyGridSize(gridSize);
-                    
-                    // 更新UI
-                    document.getElementById('difficultySelect').value = currentDifficulty;
-                    document.getElementById('pieceModeSelect').value = pieceGenerationMode;
-                    document.getElementById('gridSizeSelect').value = gridSize;
-                    document.getElementById('ghostPieceCheck').checked = showGhostPiece;
-                    document.getElementById('soundCheck').checked = soundEnabled;
-                    
-                    dropSpeed = DIFFICULTY[currentDifficulty].speed;
-                    
-                    // 初始化音频
-                    if (soundEnabled) {
-                        initAudio();
-                    }
-                }
-            };
-        }
-        
-        // 保存游戏设置
-        function saveSettings() {
-            if (!db) {
-                console.error('数据库未初始化');
-                alert('保存失败：数据库未初始化');
-                return;
-            }
-            
-            const settings = {
-                difficulty: document.getElementById('difficultySelect').value,
-                pieceMode: document.getElementById('pieceModeSelect').value,
-                gridSize: document.getElementById('gridSizeSelect').value,
-                showGhostPiece: document.getElementById('ghostPieceCheck').checked,
-                soundEnabled: document.getElementById('soundCheck').checked
-            };
-            
-            console.log('保存设置:', settings);
-            
-            const transaction = db.transaction([SETTINGS_STORE], 'readwrite');
-            const store = transaction.objectStore(SETTINGS_STORE);
-            const request = store.put({ key: 'gameSettings', value: settings });
-            
-            request.onsuccess = () => {
-                console.log('游戏设置保存成功');
-                
-                // 立即应用新设置
-                currentDifficulty = settings.difficulty;
-                pieceGenerationMode = settings.pieceMode;
-                showGhostPiece = settings.showGhostPiece;
-                soundEnabled = settings.soundEnabled;
-                
-                // 应用网格尺寸
-                applyGridSize(settings.gridSize);
-                
-                // 更新速度
-                dropSpeed = DIFFICULTY[currentDifficulty].speed;
-                updateSpeed();
-                
-                // 初始化音频
-                if (soundEnabled) {
-                    initAudio();
-                }
-                
-                // 隐藏设置面板
-                document.getElementById('settingsPanel').style.display = 'none';
-                
-                // 重新开始游戏以应用新设置
-                setTimeout(() => {
-                    restart();
-                }, 100);
-                
-                alert('设置已保存并应用！');
-            };
-            
-            request.onerror = (event) => {
-                console.error('游戏设置保存失败:', event.target.error);
-                alert('保存失败：' + event.target.error);
-            };
-        }
-        
-        // 获取排行榜数据
-        function getLeaderboard(limit = 100) {
-            return new Promise((resolve, reject) => {
-                if (!db) {
-                    resolve([]);
-                    return;
-                }
-                
-                const transaction = db.transaction([RECORD_STORE], 'readonly');
-                const store = transaction.objectStore(RECORD_STORE);
-                const index = store.index('score');
-                const request = index.openCursor(null, 'prev');
-                
-                const records = [];
-                
-                request.onsuccess = (event) => {
-                    const cursor = event.target.result;
-                    if (cursor && records.length < limit) {
-                        records.push(cursor.value);
-                        cursor.continue();
-                    } else {
-                        resolve(records);
-                    }
-                };
-                
-                request.onerror = (event) => {
-                    console.error('获取排行榜失败:', event.target.error);
-                    reject(event.target.error);
-                };
-            });
-        }
-        
-        // 显示排行榜
-        async function showLeaderboard() {
-            document.getElementById('gameOver').style.display = 'none';
-            document.getElementById('settingsPanel').style.display = 'none';
-            
-            const records = await getLeaderboard(50);
-            const leaderboardList = document.getElementById('leaderboardList');
-            
-            if (records.length === 0) {
-                leaderboardList.innerHTML = '<div style="text-align: center; padding: 20px; opacity: 0.7;">暂无游戏记录</div>';
-            } else {
-                let html = '';
-                records.forEach((record, index) => {
-                    const dateObj = new Date(record.timestamp || record.date);
-                    const dateStr = dateObj.toLocaleDateString();
-                    const timeStr = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    
-                    html += `
-                        <div class="record-item">
-                            <div class="record-rank">${index + 1}</div>
-                            <div class="record-score">${record.score}分</div>
-                            <div class="record-details">
-                                <span class="record-date">${dateStr}</span>
-                                <span class="record-time">${timeStr}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-                leaderboardList.innerHTML = html;
-            }
-            
-            document.getElementById('leaderboardPanel').style.display = 'block';
-        }
-        
-        // 隐藏排行榜
-        function hideLeaderboard() {
-            document.getElementById('leaderboardPanel').style.display = 'none';
-        }
-        
-        // 清空所有记录
-        function clearAllRecords() {
-            if (confirm('确定要清空所有游戏记录吗？此操作不可恢复！')) {
-                const transaction = db.transaction([RECORD_STORE], 'readwrite');
-                const store = transaction.objectStore(RECORD_STORE);
-                const request = store.clear();
-                
-                request.onsuccess = () => {
-                    alert('所有游戏记录已清空！');
-                    showLeaderboard();
-                };
-                
-                request.onerror = (event) => {
-                    console.error('清空记录失败:', event.target.error);
-                    alert('清空记录失败！');
-                };
-            }
-        }
-        
-        // 初始化游戏
-        async function initGame() {
-            // 初始化数据库
-            await initDatabase();
-            
-            // 初始化7袋
-            if (pieceGenerationMode === 'BAG7') {
-                initBags();
-            }
-            
-            // 更新画布大小
-            updateCanvasSize();
-            
-            // 重置游戏板
-            resetBoard();
-            
-            // 生成第一个方块
-            nextPiece = getNextPiece();
-            spawnPiece();
-            
-            // 更新UI
-            updateUI();
-            
-            // 开始游戏循环
-            gameRunning = true;
-            lastDrop = 0;
-            animationFrameId = requestAnimationFrame(gameLoop);
-        }
-        
-        // 应用网格尺寸
-        function applyGridSize(sizeKey) {
-            const size = GRID_SIZES[sizeKey];
-            COLS = size.cols;
-            ROWS = size.rows;
-            BLOCK_SIZE = size.blockSize;
-            
-            // 更新画布大小
-            updateCanvasSize();
-        }
-        
-        // 更改网格尺寸
-        function changeGridSize(sizeKey) {
-            applyGridSize(sizeKey);
-            updateCanvasSize();
-            draw();
-        }
-        
-        // 更新画布大小
-        function updateCanvasSize() {
-            canvas.width = COLS * BLOCK_SIZE;
-            canvas.height = ROWS * BLOCK_SIZE;
-            
-            // 根据屏幕大小调整最大高度
-            const maxHeight = window.innerHeight * 0.6;
-            if (canvas.height > maxHeight) {
-                const scale = maxHeight / canvas.height;
-                canvas.style.width = (canvas.width * scale) + 'px';
-                canvas.style.height = (canvas.height * scale) + 'px';
-            } else {
-                canvas.style.width = 'auto';
-                canvas.style.height = 'auto';
-            }
-            
-            // 重置游戏板
-            resetBoard();
-        }
-        
-        // 重置游戏板
-        function resetBoard() {
-            board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
-        }
-        
-        // 初始化7袋
-        function initBags() {
-            bag = [];
-            nextBag = [];
-            refillBag(bag);
-            refillBag(nextBag);
-        }
-        
-        // 填充袋子
-        function refillBag(bagArray) {
-            const indices = [0,1,2,3,4,5,6];
-            shuffleArray(indices);
-            
-            indices.forEach(index => {
-                bagArray.push({ ...SHAPES[index] });
-            });
-        }
-        
-        // 打乱数组（Fisher-Yates洗牌算法）
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-        
-        // 获取下一个方块
-        function getNextPiece() {
-            let piece;
-            
-            switch(pieceGenerationMode) {
-                case 'BAG7':
-                    if (bag.length === 0) {
-                        refillBag(bag);
-                    }
-                    piece = bag.shift();
-                    break;
-                    
-                case 'MEMORY':
-                    piece = getNextPieceMemory();
-                    break;
-                    
-                case 'RANDOM':
-                default:
-                    const randomIndex = Math.floor(Math.random() * SHAPES.length);
-                    piece = { ...SHAPES[randomIndex] };
-                    break;
-            }
-            
-            // 更新下一个方块预览
-            drawNextPiece(piece);
-            return piece;
-        }
-        
-        // 记忆模式：避免连续出现相同方块
-        let lastPieceIndex = -1;
-        function getNextPieceMemory() {
-            let index;
-            do {
-                index = Math.floor(Math.random() * SHAPES.length);
-            } while (index === lastPieceIndex && SHAPES.length > 1);
-            
-            lastPieceIndex = index;
-            return { ...SHAPES[index] };
-        }
-        
-        // 更改方块生成模式
-        function changePieceMode(mode) {
-            pieceGenerationMode = mode;
-            if (mode === 'BAG7') {
-                initBags();
-            }
-        }
-        
-        // 生成新方块
-        function spawnPiece() {
-            currentPiece = nextPiece;
-            currentX = Math.floor((COLS - currentPiece.shape[0].length) / 2);
-            currentY = 0;
-            
-            // 获取新的下一个方块
-            nextPiece = getNextPiece();
-            
-            canHold = true; // 重置暂存权限
-            
-            // 计算影子方块位置
-            updateGhostPiece();
-            
-            if (collide(currentX, currentY, currentPiece)) {
-                gameOver();
-            }
-        }
-        
-        // 计算影子方块位置
-        function updateGhostPiece() {
-            if (!currentPiece) return;
-            
-            ghostPieceY = currentY;
-            while (!collide(currentX, ghostPieceY + 1, currentPiece)) {
-                ghostPieceY++;
-            }
-        }
-        
-        // 切换显示影子方块
-        function toggleGhostPiece(enabled) {
-            showGhostPiece = enabled;
-            if (currentPiece) {
-                draw();
-            }
-        }
-        
-        // 切换音效
-        function toggleSound(enabled) {
-            soundEnabled = enabled;
-            if (soundEnabled) {
-                initAudio();
-                // 播放测试音效确认音效开启
-                setTimeout(() => playSound('move'), 100);
-            }
-        }
-        
-        // 旋转方块
-        function rotate(piece) {
-            const rows = piece.shape.length;
-            const cols = piece.shape[0].length;
-            const rotated = Array(cols).fill().map(() => Array(rows).fill(0));
-            
-            for (let y = 0; y < rows; y++) {
-                for (let x = 0; x < cols; x++) {
-                    rotated[x][rows - 1 - y] = piece.shape[y][x];
-                }
-            }
-            return { ...piece, shape: rotated };
-        }
-        
-        // 碰撞检测
-        function collide(x, y, piece) {
-            for (let py = 0; py < piece.shape.length; py++) {
-                for (let px = 0; px < piece.shape[py].length; px++) {
-                    if (piece.shape[py][px]) {
-                        const newX = x + px;
-                        const newY = y + py;
-                        if (newX < 0 || newX >= COLS || newY >= ROWS) return true;
-                        if (newY >= 0 && board[newY][newX]) return true;
-                    }
-                }
-            }
-            return false;
-        }
-        
-        // 合并方块
-        function merge() {
-            for (let y = 0; y < currentPiece.shape.length; y++) {
-                for (let x = 0; x < currentPiece.shape[y].length; x++) {
-                    if (currentPiece.shape[y][x]) {
-                        board[currentY + y][currentX + x] = currentPiece.color;
-                    }
-                }
-            }
-            
-            // 播放下落音效
-            playSound('drop');
-        }
-        
-        // 消除行
-        function clearLines() {
-            let linesCleared = 0;
-            for (let y = ROWS - 1; y >= 0; y--) {
-                if (board[y].every(cell => cell)) {
-                    board.splice(y, 1);
-                    board.unshift(Array(COLS).fill(0));
-                    linesCleared++;
-                    y++;
-                }
-            }
-            
-            if (linesCleared > 0) {
-                lines += linesCleared;
-                
-                // 计算得分
-                let lineScore = 0;
-                switch(linesCleared) {
-                    case 1: lineScore = 100; break;
-                    case 2: lineScore = 300; break;
-                    case 3: lineScore = 500; break;
-                    case 4: lineScore = 800; break;
-                }
-                
-                const multiplier = DIFFICULTY[currentDifficulty].scoreMultiplier;
-                score += Math.floor(lineScore * level * multiplier);
-                
-                // 播放消除音效
-                if (linesCleared > 0) {
-                    playSound('line');
-                }
-                
-                // 更新等级
-                const newLevel = Math.floor(lines / 10) + 1;
-                if (newLevel > level) {
-                    level = newLevel;
-                    updateSpeed();
-                }
-                
-                updateUI();
-            }
-        }
-        
-        // 更新速度
-        function updateSpeed() {
-            const baseSpeed = DIFFICULTY[currentDifficulty].speed;
-            dropSpeed = Math.max(100, baseSpeed - (level - 1) * 50);
-        }
-        
-        // 更改难度
-        function changeDifficulty(difficulty) {
-            currentDifficulty = difficulty;
-            dropSpeed = DIFFICULTY[difficulty].speed;
-            updateSpeed();
-        }
-        
-        // 绘制游戏
-        function draw() {
-            // 清空画布
-            ctx.fillStyle = '#0f1525';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // 绘制网格线
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-            ctx.lineWidth = 0.5;
-            
-            for (let x = 0; x <= COLS; x++) {
-                ctx.beginPath();
-                ctx.moveTo(x * BLOCK_SIZE, 0);
-                ctx.lineTo(x * BLOCK_SIZE, canvas.height);
-                ctx.stroke();
-            }
-            
-            for (let y = 0; y <= ROWS; y++) {
-                ctx.beginPath();
-                ctx.moveTo(0, y * BLOCK_SIZE);
-                ctx.lineTo(canvas.width, y * BLOCK_SIZE);
-                ctx.stroke();
-            }
-            
-            // 绘制已落下的方块
-            for (let y = 0; y < ROWS; y++) {
-                for (let x = 0; x < COLS; x++) {
-                    if (board[y][x]) {
-                        drawBlock(x, y, board[y][x], ctx, BLOCK_SIZE);
-                    }
-                }
-            }
-            
-            // 绘制影子方块
-            if (showGhostPiece && currentPiece) {
-                ctx.globalAlpha = 0.3;
-                for (let y = 0; y < currentPiece.shape.length; y++) {
-                    for (let x = 0; x < currentPiece.shape[y].length; x++) {
-                        if (currentPiece.shape[y][x]) {
-                            drawBlock(currentX + x, ghostPieceY + y, currentPiece.color, ctx, BLOCK_SIZE);
-                        }
-                    }
-                }
-                ctx.globalAlpha = 1.0;
-            }
-            
-            // 绘制当前方块
-            if (currentPiece) {
-                for (let y = 0; y < currentPiece.shape.length; y++) {
-                    for (let x = 0; x < currentPiece.shape[y].length; x++) {
-                        if (currentPiece.shape[y][x]) {
-                            drawBlock(currentX + x, currentY + y, currentPiece.color, ctx, BLOCK_SIZE);
-                        }
-                    }
-                }
-            }
-        }
-        
-        // 绘制单个方块
-        function drawBlock(x, y, color, context, blockSize, offsetX = 0, offsetY = 0) {
-            const pixelSize = blockSize - 1;
-            const xPos = offsetX + x * blockSize;
-            const yPos = offsetY + y * blockSize;
-            
-            // 填充颜色
-            context.fillStyle = getColor(color);
-            context.fillRect(xPos, yPos, pixelSize, pixelSize);
-            
-            // 添加高光效果
-            context.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            context.fillRect(xPos, yPos, pixelSize, 2);
-            context.fillRect(xPos, yPos, 2, pixelSize);
-            
-            // 添加阴影效果
-            context.fillStyle = 'rgba(0, 0, 0, 0.3)';
-            context.fillRect(xPos + pixelSize - 2, yPos, 2, pixelSize);
-            context.fillRect(xPos, yPos + pixelSize - 2, pixelSize, 2);
-            
-            // 添加内部细节
-            context.fillStyle = 'rgba(255, 255, 255, 0.1)';
-            context.fillRect(xPos + 2, yPos + 2, pixelSize - 4, pixelSize - 4);
-        }
-        
-        // 根据颜色编号获取颜色
-        function getColor(colorNum) {
-            const colors = [
-                '', // 索引0不使用
-                '#00bcd4', // I型 - 青色
-                '#ff9800', // O型 - 橙色
-                '#9c27b0', // T型 - 紫色
-                '#4caf50', // S型 - 绿色
-                '#f44336', // Z型 - 红色
-                '#2196f3', // J型 - 蓝色
-                '#ffeb3b'  // L型 - 黄色
-            ];
-            return colors[colorNum] || '#ffffff';
-        }
-        
-        // 绘制下一个方块预览
-        function drawNextPiece(pieceToDraw = null) {
-            const piece = pieceToDraw || nextPiece;
-            if (!piece) return;
-            
-            // 设置画布大小
-            nextPieceCanvas.width = nextPieceCanvas.offsetWidth;
-            nextPieceCanvas.height = nextPieceCanvas.offsetHeight;
-            
-            // 清空画布
-            nextPieceCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-            nextPieceCtx.fillRect(0, 0, nextPieceCanvas.width, nextPieceCanvas.height);
-            
-            const shape = piece.shape;
-            const previewBlockSize = 11;
-            
-            // 计算绘制起点，使其居中
-            const totalWidth = shape[0].length * previewBlockSize;
-            const totalHeight = shape.length * previewBlockSize;
-            const startX = (nextPieceCanvas.width - totalWidth) / 2;
-            const startY = (nextPieceCanvas.height - totalHeight) / 2;
-            
-            // 绘制方块
-            for (let y = 0; y < shape.length; y++) {
-                for (let x = 0; x < shape[y].length; x++) {
-                    if (shape[y][x]) {
-                        drawBlock(x, y, piece.color, nextPieceCtx, previewBlockSize, startX, startY);
-                    }
-                }
-            }
-            
-            // 添加边框
-            nextPieceCtx.strokeStyle = 'rgba(79, 195, 247, 0.5)';
-            nextPieceCtx.lineWidth = 1;
-            nextPieceCtx.strokeRect(startX, startY, totalWidth, totalHeight);
-        }
-        
-        // 绘制暂存方块
-        function drawHoldPiece() {
-            // 设置画布大小
-            holdCanvas.width = holdCanvas.offsetWidth;
-            holdCanvas.height = holdCanvas.offsetHeight;
-            
-            // 清空画布
-            holdCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-            holdCtx.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
-            
-            if (!heldPiece) return;
-            
-            const shape = heldPiece.shape;
-            const holdBlockSize = 11;
-            
-            // 计算绘制起点，使其居中
-            const totalWidth = shape[0].length * holdBlockSize;
-            const totalHeight = shape.length * holdBlockSize;
-            const startX = (holdCanvas.width - totalWidth) / 2;
-            const startY = (holdCanvas.height - totalHeight) / 2;
-            
-            // 绘制方块
-            for (let y = 0; y < shape.length; y++) {
-                for (let x = 0; x < shape[y].length; x++) {
-                    if (shape[y][x]) {
-                        drawBlock(x, y, heldPiece.color, holdCtx, holdBlockSize, startX, startY);
-                    }
-                }
-            }
-            
-            // 添加边框
-            holdCtx.strokeStyle = 'rgba(79, 195, 247, 0.5)';
-            holdCtx.lineWidth = 1;
-            holdCtx.strokeRect(startX, startY, totalWidth, totalHeight);
-        }
-        
-        // 游戏循环
-        function gameLoop(timestamp) {
-            if (!gameRunning) {
-                if (animationFrameId) {
-                    cancelAnimationFrame(animationFrameId);
-                    animationFrameId = null;
-                }
-                return;
-            }
-            
-            if (!isPaused) {
-                if (timestamp - lastDrop > dropSpeed) {
-                    drop();
-                    lastDrop = timestamp;
-                }
-            }
-            
-            draw();
-            animationFrameId = requestAnimationFrame(gameLoop);
-        }
-        
-        // 下落
-        function drop() {
-            if (!currentPiece) return;
-            
-            if (!collide(currentX, currentY + 1, currentPiece)) {
-                currentY++;
-                updateGhostPiece();
-            } else {
-                merge();
-                clearLines();
-                spawnPiece();
-            }
-        }
-        
-        // 移动
-        function move(dir) {
-            if (!currentPiece || isPaused) return;
-            const newX = currentX + dir;
-            if (!collide(newX, currentY, currentPiece)) {
-                currentX = newX;
-                updateGhostPiece();
-                
-                // 播放移动音效
-                playSound('move');
-            }
-        }
-        
-        // 开始软移（连续移动）
-        function startSoftMove(dir) {
-            if (!gameRunning || isPaused) return;
-            
-            softMoveDirection = dir;
-            
-            // 立即移动一次
-            move(dir);
-            
-            // 清除现有定时器
-            if (softMoveTimeout) {
-                clearTimeout(softMoveTimeout);
-            }
-            
-            // 设置长按检测定时器
-            softMoveTimeout = setTimeout(() => {
-                // 长按触发，开始连续移动
-                if (softMoveDirection !== 0) {
-                    softMoveInterval = setInterval(() => {
-                        if (softMoveDirection !== 0) {
-                            move(softMoveDirection);
-                        }
-                    }, MOVE_REPEAT_INTERVAL);
-                }
-            }, LONG_PRESS_DELAY);
-        }
-
-        // 停止软移
-        function stopSoftMove() {
-            // 清除长按定时器
-            if (softMoveTimeout) {
-                clearTimeout(softMoveTimeout);
-                softMoveTimeout = null;
-            }
-            
-            // 清除连续移动定时器
-            if (softMoveInterval) {
-                clearInterval(softMoveInterval);
-                softMoveInterval = null;
-            }
-            
-            softMoveDirection = 0;
-        }
-        
-        // 旋转
-        function rotatePiece() {
-            if (!currentPiece || isPaused) return;
-            const rotated = rotate(currentPiece);
-            
-            // 尝试墙踢（wall kick）
-            if (!collide(currentX, currentY, rotated)) {
-                currentPiece = rotated;
-            } else {
-                // 尝试向右移动一格
-                if (!collide(currentX + 1, currentY, rotated)) {
-                    currentX++;
-                    currentPiece = rotated;
-                }
-                // 尝试向左移动一格
-                else if (!collide(currentX - 1, currentY, rotated)) {
-                    currentX--;
-                    currentPiece = rotated;
-                }
-                // 尝试向上移动一格
-                else if (!collide(currentX, currentY - 1, rotated)) {
-                    currentY--;
-                    currentPiece = rotated;
-                }
-            }
-            
-            updateGhostPiece();
-            
-            // 播放旋转音效
-            playSound('rotate');
-        }
-        
-        // 暂存方块
-        function holdPiece() {
-            if (!currentPiece || isPaused || !canHold) return;
-            
-            if (heldPiece) {
-                // 交换当前方块和暂存方块
-                const temp = currentPiece;
-                currentPiece = heldPiece;
-                heldPiece = temp;
-            } else {
-                // 暂存当前方块，生成新方块
-                heldPiece = currentPiece;
-                currentPiece = null;
-                spawnPiece();
-            }
-            
-            // 重置位置
-            currentX = Math.floor((COLS - currentPiece.shape[0].length) / 2);
-            currentY = 0;
-            canHold = false; // 一次只能暂存一次，直到下一个方块落地
-            
-            updateGhostPiece();
-            drawHoldPiece();
-        }
-        
-        // 快速下落（软降）
-        function startSoftDrop() {
-            if (!gameRunning || isPaused || isSoftDropping) return;
-            isSoftDropping = true;
-            
-            // 立即执行一次软降
-            if (!collide(currentX, currentY + 1, currentPiece)) {
-                currentY++;
-                score += 1;
-                updateUI();
-            }
-            
-            // 设置连续软降间隔
-            softDropInterval = setInterval(() => {
-                if (isSoftDropping && !collide(currentX, currentY + 1, currentPiece)) {
-                    currentY++;
-                    score += 1;
-                    updateUI();
-                } else {
-                    // 碰到底部时自动停止软降
-                    stopSoftDrop();
-                }
-            }, 100);
-        }
-        
-        // 停止软降
-        function stopSoftDrop() {
-            if (softDropInterval) {
-                clearInterval(softDropInterval);
-                softDropInterval = null;
-                isSoftDropping = false;
-            }
-        }
-        
-        // 瞬降（硬降）
-        function hardDrop() {
-            if (!currentPiece || isPaused) return;
-            
-            let dropDistance = 0;
-            while (!collide(currentX, currentY + 1, currentPiece)) {
-                currentY++;
-                dropDistance++;
-            }
-            
-            // 奖励分数
-            score += dropDistance * 2;
-            updateUI();
-            
-            // 立即合并方块
-            merge();
-            clearLines();
-            spawnPiece();
-        }
-        
-        // 游戏结束
-        async function gameOver() {
-            gameRunning = false;
-            
-            // 保存记录到IndexedDB
-            await saveGameRecord();
-            
-            // 获取最近的记录
-            const recentRecords = await getLeaderboard(10);
-            
-            // 显示游戏结束界面
-            document.getElementById('finalScore').textContent = score;
-            document.getElementById('finalLines').textContent = lines;
-            document.getElementById('finalLevel').textContent = level;
-            
-            // 显示最近记录
-            const recordsList = document.getElementById('recordsList');
-            if (recentRecords.length === 0) {
-                recordsList.innerHTML = '<div style="text-align: center; padding: 20px; opacity: 0.7;">暂无游戏记录</div>';
-            } else {
-                let html = '';
-                recentRecords.forEach((record, index) => {
-                    const dateObj = new Date(record.timestamp || record.date);
-                    const dateStr = dateObj.toLocaleDateString();
-                    const timeStr = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    
-                    const isCurrentGame = record.score === score && 
-                                         record.lines === lines && 
-                                         record.level === level;
-                    
-                    html += `
-                        <div class="record-item" style="${isCurrentGame ? 'background: rgba(79, 195, 247, 0.2); border-radius: 4px;' : ''}">
-                            <div class="record-rank">${index + 1}</div>
-                            <div class="record-score">${record.score}分</div>
-                            <div class="record-details">
-                                <span class="record-date">${dateStr}</span>
-                                <span class="record-time">${timeStr}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-                recordsList.innerHTML = html;
-            }
-            
-            document.getElementById('gameOver').style.display = 'block';
-            
-            // 播放游戏结束音效
-            setTimeout(() => playSound('gameOver'), 300);
-            
-            stopSoftDrop();
-            stopSoftMove();
-        }
-        
-        // 更新UI
-        function updateUI() {
-            document.getElementById('score').textContent = score;
-            document.getElementById('level').textContent = level;
-            document.getElementById('lines').textContent = lines;
-            document.getElementById('highScore').textContent = highScore;
-        }
-        
-        // 重新开始
-        async function restart() {
-            console.log('重新开始游戏');
-            
-            // 取消之前的动画帧
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-                animationFrameId = null;
-            }
-            
-            // 停止所有定时器
-            stopSoftDrop();
-            stopSoftMove();
-            
-            if (softDropInterval) {
-                clearInterval(softDropInterval);
-                softDropInterval = null;
-                isSoftDropping = false;
-            }
-            
-            // 重置游戏状态
-            resetBoard();
-            currentPiece = null;
-            nextPiece = null;
-            heldPiece = null;
-            canHold = true;
-            score = 0;
-            level = 1;
-            lines = 0;
-            gameRunning = true;
-            isPaused = false;
-            lastDrop = 0;
-            
-            // 重置7袋
-            if (pieceGenerationMode === 'BAG7') {
-                initBags();
-            }
-            
-            // 更新速度
-            updateSpeed();
-            
-            // 更新UI
-            updateUI();
-            
-            // 隐藏游戏结束和排行榜界面
-            document.getElementById('gameOver').style.display = 'none';
-            document.getElementById('leaderboardPanel').style.display = 'none';
-            document.getElementById('settingsPanel').style.display = 'none';
-            
-            // 生成新方块
-            nextPiece = getNextPiece();
-            spawnPiece();
-            
-            // 清空暂存区
-            drawHoldPiece();
-            
-            // 重置按钮文本
-            document.getElementById('pauseBtn').textContent = '暂停';
-            
-            // 重新开始游戏循环
-            lastDrop = 0;
-            animationFrameId = requestAnimationFrame(gameLoop);
-        }
-        
-        // 切换暂停
-        function togglePause() {
-            isPaused = !isPaused;
-            document.getElementById('pauseBtn').textContent = isPaused ? '继续' : '暂停';
-            
-            if (isPaused) {
-                stopSoftDrop();
-                stopSoftMove();
-            } else {
-                // 继续游戏时确保软降状态正确
-                if (isSoftDropping) {
-                    stopSoftDrop();
-                }
-            }
-        }
-        
-        // 切换设置面板
-        function toggleSettings() {
-            const settingsPanel = document.getElementById('settingsPanel');
-            settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
-            
-            // 隐藏其他面板
-            document.getElementById('gameOver').style.display = 'none';
-            document.getElementById('leaderboardPanel').style.display = 'none';
-        }
-        
-        // 键盘控制
-        document.addEventListener('keydown', (e) => {
-            if (!gameRunning) return;
-            
-            switch(e.key) {
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    startSoftMove(-1);
-                    break;
-                case 'ArrowRight':
-                    e.preventDefault();
-                    startSoftMove(1);
-                    break;
-                case 'ArrowDown':
-                    e.preventDefault();
-                    if (!e.repeat) {
-                        startSoftDrop();
-                    }
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    rotatePiece();
-                    break;
-                case ' ':
-                    e.preventDefault();
-                    hardDrop();
-                    break;
-                case 'c':
-                case 'C':
-                    e.preventDefault();
-                    holdPiece();
-                    break;
-                case 'p':
-                case 'P':
-                    e.preventDefault();
-                    togglePause();
-                    break;
-                case 'Escape':
-                    e.preventDefault();
-                    toggleSettings();
-                    break;
-            }
-        });
-        
-        document.addEventListener('keyup', (e) => {
-            switch(e.key) {
-                case 'ArrowLeft':
-                case 'ArrowRight':
-                    e.preventDefault();
-                    stopSoftMove();
-                    break;
-                case 'ArrowDown':
-                    e.preventDefault();
-                    stopSoftDrop();
-                    break;
-            }
-        });
-        
-        // 绑定按钮事件
-        function bindButtonEvents() {
-            // 移动按钮
-            const leftBtn = document.getElementById('btnLeft');
-            const rightBtn = document.getElementById('btnRight');
-            
-            // 软移功能：按下开始连续移动，松开停止
-            [leftBtn, rightBtn].forEach((btn, index) => {
-                const dir = index === 0 ? -1 : 1;
-                
-                // 鼠标事件
-                btn.addEventListener('mousedown', () => startSoftMove(dir));
-                btn.addEventListener('mouseup', stopSoftMove);
-                btn.addEventListener('mouseleave', stopSoftMove);
-                
-                // 触摸事件
-                btn.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    startSoftMove(dir);
-                });
-                btn.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    stopSoftMove();
-                });
-                btn.addEventListener('touchcancel', (e) => {
-                    e.preventDefault();
-                    stopSoftMove();
-                });
-            });
-            
-            // 旋转按钮
-            document.getElementById('btnRotate').addEventListener('click', rotatePiece);
-            document.getElementById('btnRotate').addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                rotatePiece();
-            });
-            
-            // 软降按钮
-            const downBtn = document.getElementById('btnDown');
-            downBtn.addEventListener('mousedown', () => {
-                if (!gameRunning || isPaused) return;
-                startSoftDrop();
-            });
-            downBtn.addEventListener('mouseup', stopSoftDrop);
-            downBtn.addEventListener('mouseleave', stopSoftDrop);
-            downBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (!gameRunning || isPaused) return;
-                startSoftDrop();
-            });
-            downBtn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                stopSoftDrop();
-            });
-            downBtn.addEventListener('touchcancel', (e) => {
-                e.preventDefault();
-                stopSoftDrop();
-            });
-            
-            // 硬降按钮
-            document.getElementById('btnHardDrop').addEventListener('click', hardDrop);
-            document.getElementById('btnHardDrop').addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                hardDrop();
-            });
-            
-            // 暂存按钮
-            document.getElementById('btnHold').addEventListener('click', holdPiece);
-            document.getElementById('btnHold').addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                holdPiece();
-            });
-            
-            // 初始化音频（通过用户交互）
-            document.getElementById('touchControls').addEventListener('touchstart', initAudio);
-            document.getElementById('touchControls').addEventListener('mousedown', initAudio);
-        }
-        
-        // 防止触摸默认行为
-        document.getElementById('touchControls').addEventListener('touchstart', (e) => {
-            if (e.target === e.currentTarget) {
-                e.preventDefault();
-            }
-        });
-        
-        // 窗口大小变化时更新画布大小和预览
-        window.addEventListener('resize', () => {
-            updateCanvasSize();
-            drawNextPiece();
-            drawHoldPiece();
-        });
-        
-        // 页面卸载时清理
-        window.addEventListener('beforeunload', () => {
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-            }
-            
-            stopSoftDrop();
-            stopSoftMove();
-            
-            if (softDropInterval) {
-                clearInterval(softDropInterval);
-            }
-        });
-        
-        // 页面加载完成后初始化游戏
-        window.addEventListener('DOMContentLoaded', () => {
-            bindButtonEvents();
-            initGame();
-        });
-    </script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        // 注意：如果站点在子目录（如 /project/），注册路径需要包含子目录前缀
-        // 一般使用相对路径 './sv.js' 或绝对路径 '/project/sv.js'
-        navigator.serviceWorker.register('./sv.js').then(reg => {
-          console.log('Service Worker 注册成功，作用域:', reg.scope);
-        }).catch(err => {
-          console.error('Service Worker 注册失败:', err);
-        });
-      }
-    </script>
+        if(linesCleared===0){ comboCount=0; document.getElementById('combo').textContent='0'; return; }
+        // Combo连击: 每次消除增加combo，倍数加成
+        comboCount++;
+        let comboBonus = 1 + (comboCount-1)*0.25;
+        if(comboBonus>3) comboBonus=3;
+        let lineScore=0;
+        switch(linesCleared){ case 1: lineScore=100; break; case 2: lineScore=300; break; case 3: lineScore=500; break; case 4: lineScore=800; break; }
+        let multiplier=DIFFICULTY[currentDifficulty].scoreMultiplier;
+        let addScore = Math.floor(lineScore * level * multiplier * comboBonus);
+        score += addScore;
+        lines += linesCleared;
+        // 显示Combo提示
+        if(comboCount>=2){
+            let pop=document.createElement('div'); pop.className='combo-pop'; pop.textContent=`${comboCount} Combo! x${comboBonus.toFixed(1)}`; document.getElementById('gameArea').appendChild(pop); setTimeout(()=>pop.remove(),1000);
+            playSound('combo');
+        } else playSound('line');
+        // 更新等级
+        let newLevel=Math.floor(lines/10)+1;
+        if(newLevel>level){ level=newLevel; updateSpeed(); playSound('levelup'); }
+        updateUI();
+        document.getElementById('combo').textContent=comboCount;
+    }
+    function createParticle(x,y){
+        let particleDiv=document.createElement('div'); particleDiv.className='particle'; let angle=Math.random()*Math.PI*2, speed=2+Math.random()*4; let dx=Math.cos(angle)*speed, dy=Math.sin(angle)*speed; particleDiv.style.left=(canvas.offsetLeft+x)+'px'; particleDiv.style.top=(canvas.offsetTop+y)+'px'; particleDiv.style.setProperty('--dx',dx*10+'px'); particleDiv.style.setProperty('--dy',dy*10+'px'); particleDiv.style.background=`hsl(${Math.random()*360},70%,60%)`; document.body.appendChild(particleDiv); setTimeout(()=>particleDiv.remove(),600);
+    }
+    function updateSpeed(){ let baseSpeed=DIFFICULTY[currentDifficulty].speed; dropSpeed=Math.max(100, baseSpeed - (level-1)*50); }
+    function changeDifficulty(d){ currentDifficulty=d; dropSpeed=DIFFICULTY[d].speed; updateSpeed(); }
+    // 绘制 (复用drawBlock)
+    function draw(){
+        ctx.fillStyle='var(--grid-bg)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=0.5;
+        for(let x=0;x<=COLS;x++){ ctx.beginPath(); ctx.moveTo(x*BLOCK_SIZE,0); ctx.lineTo(x*BLOCK_SIZE,canvas.height); ctx.stroke(); }
+        for(let y=0;y<=ROWS;y++){ ctx.beginPath(); ctx.moveTo(0,y*BLOCK_SIZE); ctx.lineTo(canvas.width,y*BLOCK_SIZE); ctx.stroke(); }
+        for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) if(board[y][x]) drawBlock(x,y,board[y][x],ctx,BLOCK_SIZE);
+        if(showGhostPiece && currentPiece){ ctx.globalAlpha=0.3; for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++) if(currentPiece.shape[y][x]) drawBlock(currentX+x,ghostPieceY+y,currentPiece.color,ctx,BLOCK_SIZE); ctx.globalAlpha=1; }
+        if(currentPiece) for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++) if(currentPiece.shape[y][x]) drawBlock(currentX+x,currentY+y,currentPiece.color,ctx,BLOCK_SIZE);
+    }
+    function drawBlock(x,y,color,context,blockSize,offsetX=0,offsetY=0){
+        let ps=blockSize-1, xp=offsetX+x*blockSize, yp=offsetY+y*blockSize;
+        context.fillStyle=getColor(color); context.fillRect(xp,yp,ps,ps);
+        context.fillStyle='rgba(255,255,255,0.3)'; context.fillRect(xp,yp,ps,2); context.fillRect(xp,yp,2,ps);
+        context.fillStyle='rgba(0,0,0,0.3)'; context.fillRect(xp+ps-2,yp,2,ps); context.fillRect(xp,yp+ps-2,ps,2);
+    }
+    function getColor(n){ let cols=['','#00bcd4','#ff9800','#9c27b0','#4caf50','#f44336','#2196f3','#ffeb3b']; return cols[n]||'#fff'; }
+    function drawNextPiece(piece){ if(!piece)return; nextPieceCanvas.width=nextPieceCanvas.offsetWidth; nextPieceCanvas.height=nextPieceCanvas.offsetHeight; nextPieceCtx.fillStyle='rgba(0,0,0,0.3)'; nextPieceCtx.fillRect(0,0,nextPieceCanvas.width,nextPieceCanvas.height); let shape=piece.shape, sz=11, tw=shape[0].length*sz, th=shape.length*sz, sx=(nextPieceCanvas.width-tw)/2, sy=(nextPieceCanvas.height-th)/2; for(let y=0;y<shape.length;y++) for(let x=0;x<shape[0].length;x++) if(shape[y][x]) drawBlock(x,y,piece.color,nextPieceCtx,sz,sx,sy); nextPieceCtx.strokeStyle='var(--accent)'; nextPieceCtx.strokeRect(sx,sy,tw,th); }
+    function drawHoldPiece(){ holdCanvas.width=holdCanvas.offsetWidth; holdCanvas.height=holdCanvas.offsetHeight; holdCtx.fillStyle='rgba(0,0,0,0.3)'; holdCtx.fillRect(0,0,holdCanvas.width,holdCanvas.height); if(!heldPiece)return; let shape=heldPiece.shape, sz=11, tw=shape[0].length*sz, th=shape.length*sz, sx=(holdCanvas.width-tw)/2, sy=(holdCanvas.height-th)/2; for(let y=0;y<shape.length;y++) for(let x=0;x<shape[0].length;x++) if(shape[y][x]) drawBlock(x,y,heldPiece.color,holdCtx,sz,sx,sy); holdCtx.strokeStyle='var(--accent)'; holdCtx.strokeRect(sx,sy,tw,th); }
+    // 游戏循环
+    function gameLoop(timestamp){ if(!gameRunning){ if(animationFrameId) cancelAnimationFrame(animationFrameId); return; } if(!isPaused && timestamp-lastDrop>dropSpeed){ drop(); lastDrop=timestamp; } draw(); animationFrameId=requestAnimationFrame(gameLoop); }
+    function drop(){ if(!currentPiece) return; if(!collide(currentX,currentY+1,currentPiece)){ currentY++; updateGhostPiece(); } else { merge(); clearLines(); spawnPiece(); if(gameMode==='TIMED' && timeRemaining<=0) gameOver(); } }
+    function move(dir){ if(!currentPiece||isPaused) return; if(!collide(currentX+dir,currentY,currentPiece)){ currentX+=dir; updateGhostPiece(); playSound('move'); } }
+    function startSoftMove(dir){ if(!gameRunning||isPaused) return; softMoveDirection=dir; move(dir); if(softMoveTimeout)clearTimeout(softMoveTimeout); softMoveTimeout=setTimeout(()=>{ softMoveInterval=setInterval(()=>{ if(softMoveDirection!==0) move(softMoveDirection); },MOVE_REPEAT_INTERVAL); },LONG_PRESS_DELAY); }
+    function stopSoftMove(){ if(softMoveTimeout)clearTimeout(softMoveTimeout); if(softMoveInterval)clearInterval(softMoveInterval); softMoveDirection=0; }
+    function rotatePiece(){ if(!currentPiece||isPaused) return; let rotated=rotate(currentPiece); if(!collide(currentX,currentY,rotated)) currentPiece=rotated; else if(!collide(currentX+1,currentY,rotated)){ currentX++; currentPiece=rotated; } else if(!collide(currentX-1,currentY,rotated)){ currentX--; currentPiece=rotated; } else if(!collide(currentX,currentY-1,rotated)){ currentY--; currentPiece=rotated; } updateGhostPiece(); playSound('rotate'); }
+    function holdPiece(){ if(!currentPiece||isPaused||!canHold) return; if(heldPiece){ let temp=currentPiece; currentPiece=heldPiece; heldPiece=temp; } else { heldPiece=currentPiece; currentPiece=null; spawnPiece(); } currentX=Math.floor((COLS-currentPiece.shape[0].length)/2); currentY=0; canHold=false; updateGhostPiece(); drawHoldPiece(); playSound('hold'); }
+    function startSoftDrop(){ if(!gameRunning||isPaused||isSoftDropping) return; isSoftDropping=true; if(!collide(currentX,currentY+1,currentPiece)){ currentY++; score+=1; updateUI(); } softDropInterval=setInterval(()=>{ if(isSoftDropping && !collide(currentX,currentY+1,currentPiece)){ currentY++; score+=1; updateUI(); } else stopSoftDrop(); },100); }
+    function stopSoftDrop(){ if(softDropInterval)clearInterval(softDropInterval); isSoftDropping=false; }
+    function hardDrop(){ if(!currentPiece||isPaused) return; let dist=0; while(!collide(currentX,currentY+1,currentPiece)){ currentY++; dist++; } score+=dist*2; updateUI(); merge(); clearLines(); spawnPiece(); playSound('harddrop'); }
+    // 限时模式计时器
+    function startTimer(){ if(timerInterval) clearInterval(timerInterval); timerInterval=setInterval(()=>{ if(!gameRunning||isPaused) return; if(timeRemaining<=0){ clearInterval(timerInterval); gameOver(); } else { timeRemaining--; updateTimerDisplay(); } },1000); }
+    function updateTimerDisplay(){ let mins=Math.floor(timeRemaining/60), secs=timeRemaining%60; document.getElementById('timer').textContent=`${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`; if(timeRemaining<=10) playSound('tick'); }
+    async function gameOver(){ gameRunning=false; if(timerInterval)clearInterval(timerInterval); await saveGameRecord(); document.getElementById('finalScore').textContent=score; document.getElementById('gameOver').style.display='block'; playSound('gameOver'); stopSoftDrop(); stopSoftMove(); }
+    function updateUI(){ document.getElementById('score').textContent=score; document.getElementById('level').textContent=level; document.getElementById('lines').textContent=lines; document.getElementById('highScore').textContent=highScore; document.getElementById('combo').textContent=comboCount; }
+    async function restart(){ if(animationFrameId) cancelAnimationFrame(animationFrameId); stopSoftDrop(); stopSoftMove(); if(timerInterval) clearInterval(timerInterval); resetBoard(); currentPiece=null; nextPiece=null; heldPiece=null; canHold=true; score=0; level=1; lines=0; comboCount=0; gameRunning=true; isPaused=false; lastDrop=0; timeRemaining=60; updateTimerDisplay(); currentDifficulty=document.getElementById('difficultySelect').value; pieceGenerationMode=document.getElementById('pieceModeSelect').value; gameMode=document.getElementById('gameModeSelect').value; showGhostPiece=document.getElementById('ghostPieceCheck').checked; soundEnabled=document.getElementById('soundCheck').checked; if(pieceGenerationMode==='BAG7') initBags(); updateSpeed(); updateUI(); document.getElementById('gameOver').style.display='none'; document.getElementById('leaderboardPanel').style.display='none'; document.getElementById('settingsPanel').style.display='none'; document.getElementById('pauseBtn').textContent='暂停'; nextPiece=getNextPiece(); spawnPiece(); drawHoldPiece(); if(gameMode==='TIMED'){ document.getElementById('timerDisplay').style.display='flex'; startTimer(); } else document.getElementById('timerDisplay').style.display='none'; lastDrop=0; animationFrameId=requestAnimationFrame(gameLoop); }
+    function togglePause(){ isPaused=!isPaused; document.getElementById('pauseBtn').textContent=isPaused?'继续':'暂停'; if(isPaused){ stopSoftDrop(); stopSoftMove(); if(timerInterval) clearInterval(timerInterval); } else { if(gameMode==='TIMED' && gameRunning && timeRemaining>0) startTimer(); } }
+    function toggleSettings(){ let panel=document.getElementById('settingsPanel'); panel.style.display=panel.style.display==='block'?'none':'block'; }
+    // 音效系统 (Web Audio)
+    function initAudio(){ if(audioInitialized) return; try{ let AC=window.AudioContext||window.webkitAudioContext; if(AC){ audioContext=new AC(); audioInitialized=true; if(audioContext.state==='suspended'){ let resume=()=>{ audioContext.resume(); document.removeEventListener('click',resume); document.removeEventListener('touchstart',resume); }; document.addEventListener('click',resume,{once:true}); document.addEventListener('touchstart',resume,{once:true}); } } }catch(e){ console.warn(e); } }
+    function playSound(type){ if(!soundEnabled||!audioContext) return; if(audioContext.state==='suspended'){ audioContext.resume(); return; } try{ let now=audioContext.currentTime, osc=audioContext.createOscillator(), gain=audioContext.createGain(); osc.connect(gain); gain.connect(audioContext.destination); let freq=800, dur=0.1, vol=0.2; switch(type){ case'move': freq=600; dur=0.05; vol=0.1; break; case'rotate': freq=800; dur=0.07; vol=0.15; break; case'drop': freq=400; dur=0.15; vol=0.25; break; case'line': freq=1000; dur=0.2; vol=0.3; break; case'combo': freq=1200; dur=0.25; vol=0.35; break; case'levelup': freq=600; dur=0.4; vol=0.3; break; case'gameOver': freq=300; dur=0.6; vol=0.2; break; case'hold': freq=700; dur=0.1; vol=0.2; break; case'harddrop': freq=200; dur=0.2; vol=0.25; break; case'tick': freq=1500; dur=0.03; vol=0.1; break; default: return; } osc.frequency.value=freq; gain.gain.setValueAtTime(vol,now); gain.gain.exponentialRampToValueAtTime(0.0001,now+dur); osc.start(now); osc.stop(now+dur); osc.onended=()=>{ osc.disconnect(); gain.disconnect(); }; }catch(e){} }
+    // 键盘绑定与初始化
+    function bindEvents(){
+        document.addEventListener('keydown',(e)=>{ if(!gameRunning) return; switch(e.key){ case'ArrowLeft': e.preventDefault(); startSoftMove(-1); break; case'ArrowRight': e.preventDefault(); startSoftMove(1); break; case'ArrowDown': e.preventDefault(); startSoftDrop(); break; case'ArrowUp': e.preventDefault(); rotatePiece(); break; case' ': e.preventDefault(); hardDrop(); break; case'c': case'C': holdPiece(); break; case'p': case'P': togglePause(); break; case'Escape': toggleSettings(); break; } });
+        document.addEventListener('keyup',(e)=>{ if(e.key==='ArrowLeft'||e.key==='ArrowRight') stopSoftMove(); if(e.key==='ArrowDown') stopSoftDrop(); });
+        let left=document.getElementById('btnLeft'),right=document.getElementById('btnRight'),down=document.getElementById('btnDown');
+        left.addEventListener('mousedown',()=>startSoftMove(-1)); left.addEventListener('mouseup',stopSoftMove); left.addEventListener('mouseleave',stopSoftMove);
+        right.addEventListener('mousedown',()=>startSoftMove(1)); right.addEventListener('mouseup',stopSoftMove); right.addEventListener('mouseleave',stopSoftMove);
+        down.addEventListener('mousedown',()=>startSoftDrop()); down.addEventListener('mouseup',stopSoftDrop); down.addEventListener('mouseleave',stopSoftDrop);
+        document.getElementById('btnRotate').addEventListener('click',rotatePiece); document.getElementById('btnHardDrop').addEventListener('click',hardDrop); document.getElementById('btnHold').addEventListener('click',holdPiece);
+        ['touchstart','touchend'].forEach(ev=>{ document.querySelectorAll('.touch-btn').forEach(btn=>btn.addEventListener(ev,e=>e.preventDefault())); });
+        document.getElementById('touchControls').addEventListener('touchstart',initAudio);
+    }
+    window.addEventListener('load',async()=>{ await initDatabase(); bindEvents(); applyGridSize('12x24'); updateCanvasSize(); resetBoard(); nextPiece=getNextPiece(); spawnPiece(); animationFrameId=requestAnimationFrame(gameLoop); });
+</script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sv.js').catch(e=>console.log);</script>
 </body>
 </html>
