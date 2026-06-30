@@ -652,6 +652,6 @@
 
     window.addEventListener('load', async()=>{ await initDatabase(); bindEvents(); applyGridSize('12x24'); updateCanvasSize(); resetBoard(); nextPiece=getNextPiece(); spawnPiece(); animationFrameId=requestAnimationFrame(gameLoop); });
 </script>
-<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sv.js').catch(e=>console.log);</script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(e=>console.log);</script>
 </body>
 </html>
