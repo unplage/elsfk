@@ -184,10 +184,10 @@
             display: block;
         }
         #settingsPanel {
-            position: absolute;
-            top: 50%;
+            position: fixed;
+            top: 2vh;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.95);
             border: 2px solid var(--accent);
             padding: 15px;
@@ -196,7 +196,7 @@
             z-index: 50;
             min-width: 200px;
             max-width: 90vw;
-            max-height: 85vh;
+            max-height: 96vh;
             overflow-y: auto;
             display: none;
         }
@@ -927,10 +927,10 @@
     // DAS/ARR 系统
     function startDAS(dir){
         if(!gameRunning||isPaused||!currentPiece) return;
+        clearDAS();
         dasDir=dir;
         move(dir);
-        clearDAS();
-        dasTimerId=setTimeout(()=>{ arrTimerId=setInterval(()=>{ if(dasDir!==0&&currentPiece&&!isPaused) move(dasDir); else clearDAS(); },arrRate); },dasDelay);
+        dasTimerId=setTimeout(()=>{ arrTimerId=setInterval(()=>{ if(dasDir!==0&&currentPiece&&!isPaused&&gameRunning) move(dasDir); else clearDAS(); },arrRate); },dasDelay);
     }
     function clearDAS(){
         if(dasTimerId){clearTimeout(dasTimerId);dasTimerId=null;}
