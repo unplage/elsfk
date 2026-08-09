@@ -646,7 +646,7 @@
             let u=unlockedAchs.has(a.id);
             html+=`<div style="margin:12px 0;opacity:${u?1:0.4}"><span style="font-size:30px">${a.icon}</span><div style="font-weight:bold;margin-top:4px">${a.name}</div><div style="font-size:12px;color:#aaa">${a.desc}</div><div style="font-size:11px;color:${u?'#4caf50':'#555'}">${u?'✓ 已解锁':'🔒 未解锁'}</div></div>`;
         });
-        html+='</div><div class="leaderboard-buttons"><button class="small-btn" onclick="toggleSettings()">返回</button></div>';
+        html+='</div><div class="leaderboard-buttons"><button class="small-btn" onclick="hideLeaderboard()">返回</button></div>';
         let panel=document.getElementById('leaderboardPanel');
         panel.innerHTML=`<div class="settings-title">成就列表</div>${html}`;
         panel.style.display='block';
@@ -848,12 +848,12 @@
         for(let y=0;y<=ROWS;y++){ ctx.beginPath(); ctx.moveTo(0,y*BLOCK_SIZE); ctx.lineTo(canvas.width,y*BLOCK_SIZE); ctx.stroke(); }
         for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) if(board[y][x]) drawBlock(x,y,board[y][x],ctx,BLOCK_SIZE);
         if(showGhostPiece && currentPiece){
-            ctx.globalAlpha=0.12;
+            ctx.globalAlpha=0.04;
             for(let y=currentY;y<=ghostPieceY;y++){
                 for(let py=0;py<currentPiece.shape.length;py++) for(let px=0;px<currentPiece.shape[py].length;px++)
                     if(currentPiece.shape[py][px]) drawBlock(currentX+px,y+py,currentPiece.color,ctx,BLOCK_SIZE);
             }
-            ctx.globalAlpha=0.3;
+            ctx.globalAlpha=0.15;
             for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++)
                 if(currentPiece.shape[y][x]) drawBlock(currentX+x,ghostPieceY+y,currentPiece.color,ctx,BLOCK_SIZE);
             ctx.globalAlpha=1;
