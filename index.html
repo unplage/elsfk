@@ -317,6 +317,84 @@
             0% { transform: scale(1); opacity: 1; }
             100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
         }
+        .lock-flash {
+            animation: lockFlash 0.15s ease-in-out 3;
+        }
+        @keyframes lockFlash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+        .shockwave {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            border: 3px solid var(--accent);
+            animation: shockwaveAnim 0.5s ease-out forwards;
+            z-index: 150;
+        }
+        @keyframes shockwaveAnim {
+            0% { width: 10px; height: 10px; opacity: 0.8; }
+            100% { width: 120px; height: 120px; opacity: 0; }
+        }
+        .harddrop-trail {
+            position: absolute;
+            pointer-events: none;
+            background: var(--accent);
+            opacity: 0.15;
+            border-radius: 2px;
+            z-index: 5;
+        }
+        .achievement-toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            border: 2px solid gold;
+            border-radius: 12px;
+            padding: 20px 30px;
+            text-align: center;
+            z-index: 300;
+            animation: achievementPop 2.5s ease forwards;
+            pointer-events: none;
+        }
+        .achievement-toast .ach-icon { font-size: 40px; display: block; margin-bottom: 8px; }
+        .achievement-toast .ach-title { font-size: 18px; font-weight: bold; color: gold; }
+        .achievement-toast .ach-desc { font-size: 13px; color: #ccc; margin-top: 4px; }
+        @keyframes achievementPop {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            15% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            25% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            75% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+        }
+        .line-clear-flash {
+            animation: lineFlash 0.3s ease-out;
+        }
+        @keyframes lineFlash {
+            0% { background: rgba(255,255,255,0.6); }
+            100% { background: transparent; }
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #444;
+            border-radius: 3px;
+            outline: none;
+            margin: 8px 0;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2px solid #fff;
+        }
         @media (max-height: 600px) {
             #touchControls { grid-template-columns: 80px 80px 80px; grid-template-rows: 60px 60px; padding: 12px; }
             .touch-btn { font-size: 22px; }
@@ -349,9 +427,12 @@
             <div class="setting-group"><label class="setting-label">生成模式</label><select id="pieceModeSelect" onchange="changePieceMode(this.value)"><option value="BAG7" selected>7袋模式</option><option value="RANDOM">完全随机</option></select></div>
             <div class="setting-group"><label><input type="checkbox" id="ghostPieceCheck" checked> 显示影子</label></div>
             <div class="setting-group"><label><input type="checkbox" id="soundCheck"> 音效</label></div>
-            <div class="setting-group"><label class="setting-label">游戏模式</label><select id="gameModeSelect"><option value="NORMAL">经典模式</option><option value="TIMED">限时模式 (60秒)</option></select></div>
+            <div class="setting-group"><label class="setting-label">游戏模式</label><select id="gameModeSelect"><option value="NORMAL">经典模式</option><option value="TIMED">限时模式 (60秒)</option><option value="SPRINT">Sprint (40行)</option><option value="ULTRA">Ultra (2分钟)</option><option value="MARATHON">马拉松</option><option value="SURVIVAL">生存模式</option></select></div>
+            <div class="setting-group"><label class="setting-label">DAS <span id="dasValue" style="color:var(--accent)">167</span>ms</label><input type="range" id="dasSlider" min="50" max="300" value="167"></div>
+            <div class="setting-group"><label class="setting-label">ARR <span id="arrValue" style="color:var(--accent)">33</span>ms</label><input type="range" id="arrSlider" min="10" max="100" value="33"></div>
             <div class="setting-group"><label class="setting-label">主题皮肤</label><select id="themeSelect" onchange="changeTheme(this.value)"><option value="default">默认(蓝)</option><option value="cyberpunk">赛博朋克</option><option value="forest">森林</option><option value="classic">经典黑白</option></select></div>
-            <div class="leaderboard-buttons"><button class="small-btn" onclick="saveSettings()">保存</button><button class="small-btn" onclick="showLeaderboard()">排行榜</button><button class="small-btn" onclick="toggleSettings()">关闭</button></div>
+            <div class="setting-group" id="statsGroup" style="border-top:1px solid var(--border-color);padding-top:10px;margin-top:10px"><div class="settings-title" style="font-size:14px">个人统计</div><div id="statsContent" style="font-size:12px;text-align:left;line-height:1.8"></div></div>
+            <div class="leaderboard-buttons"><button class="small-btn" onclick="saveSettings()">保存</button><button class="small-btn" onclick="showLeaderboard()">排行榜</button><button class="small-btn" onclick="showAchievements()">成就</button><button class="small-btn" onclick="toggleSettings()">关闭</button></div>
         </div>
     </div>
     <div id="touchControls">
@@ -363,15 +444,17 @@
         <button class="touch-btn" id="btnRight">→</button>
     </div>
 </div>
-<div id="gameOver"><h2>游戏结束</h2><div>最终分数: <span id="finalScore">0</span></div><div class="leaderboard-buttons"><button class="small-btn" onclick="restart()">再玩一次</button><button class="small-btn" onclick="toggleSettings()">设置</button></div></div>
+<div id="gameOver"><h2 id="gameOverTitle">游戏结束</h2><div id="gameOverSub" style="font-size:14px;margin-top:6px;color:var(--accent)"></div><div>最终分数: <span id="finalScore">0</span></div><div>消除行数: <span id="finalLines">0</span></div><div class="leaderboard-buttons"><button class="small-btn" onclick="restart()">再玩一次</button><button class="small-btn" onclick="toggleSettings()">设置</button></div></div>
 <div id="leaderboardPanel"><h2>历史排行榜</h2><div id="leaderboardList"></div><div class="leaderboard-buttons"><button class="small-btn" onclick="hideLeaderboard()">返回</button><button class="small-btn" onclick="clearAllRecords()">清空记录</button></div></div>
 
 <script>
     // ---------- 数据库 & 全局变量 ----------
     const DB_NAME = 'TetrisGameDB';
-    const DB_VERSION = 1;
+    const DB_VERSION = 2;
     const RECORD_STORE = 'gameRecords';
     const SETTINGS_STORE = 'gameSettings';
+    const STATS_STORE = 'playerStats';
+    const ACH_STORE = 'achievements';
     let db = null, highScore = 0;
     const DIFFICULTY = { EASY:{ speed:1000, scoreMultiplier:0.8 }, NORMAL:{ speed:600, scoreMultiplier:1.0 }, HARD:{ speed:350, scoreMultiplier:1.5 }, EXPERT:{ speed:200, scoreMultiplier:2.0 } };
     const GRID_SIZES = { '10x20':{ cols:10, rows:20, blockSize:24 }, '12x24':{ cols:12, rows:24, blockSize:20 }, '15x30':{ cols:15, rows:30, blockSize:16 } };
@@ -380,21 +463,43 @@
         { shape:[[0,1,1],[1,1,0]], color:4, name:'S' }, { shape:[[1,1,0],[0,1,1]], color:5, name:'Z' },
         { shape:[[1,0,0],[1,1,1]], color:6, name:'J' }, { shape:[[0,0,1],[1,1,1]], color:7, name:'L' }
     ];
+    // SRS Wall Kick Tables
+    const WK_JLSTZ = { '0>1':[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]], '1>0':[[0,0],[1,0],[1,-1],[0,2],[1,2]], '1>2':[[0,0],[1,0],[1,-1],[0,2],[1,2]], '2>1':[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]], '2>3':[[0,0],[1,0],[1,1],[0,-2],[1,-2]], '3>2':[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]], '3>0':[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]], '0>3':[[0,0],[1,0],[1,1],[0,-2],[1,-2]] };
+    const WK_I = { '0>1':[[0,0],[-2,0],[1,0],[-2,-1],[1,2]], '1>0':[[0,0],[2,0],[-1,0],[2,1],[-1,-2]], '1>2':[[0,0],[-1,0],[2,0],[-1,2],[2,-1]], '2>1':[[0,0],[1,0],[-2,0],[1,-2],[-2,1]], '2>3':[[0,0],[2,0],[-1,0],[2,1],[-1,-2]], '3>2':[[0,0],[-2,0],[1,0],[-2,-1],[1,2]], '3>0':[[0,0],[1,0],[-2,0],[1,-2],[-2,1]], '0>3':[[0,0],[-1,0],[2,0],[-1,2],[2,-1]] };
     let canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
     let holdCanvas = document.getElementById('holdCanvas'), holdCtx = holdCanvas.getContext('2d');
     let nextPieceCanvas = document.getElementById('nextPieceCanvas'), nextPieceCtx = nextPieceCanvas.getContext('2d');
     let COLS=12, ROWS=24, BLOCK_SIZE=20, board=[], currentPiece=null, nextPiece=null, heldPiece=null, canHold=true, currentX=0, currentY=0;
     let score=0, level=1, lines=0, dropSpeed=600, currentDifficulty='NORMAL', gameRunning=true, isPaused=false, lastDrop=0, ghostPieceY=0, showGhostPiece=true, pieceGenerationMode='BAG7', soundEnabled=false;
-    let bag=[], softMoveInterval=null, softMoveDirection=0, MOVE_REPEAT_INTERVAL=100;  // 无延迟连续移动参数
-    let softDropInterval=null, isSoftDropping=false;
-    // 音效
+    let bag=[];
     let audioContext=null, audioInitialized=false, animationFrameId=null;
-    // Combo连击系统
     let comboCount=0;
-    // 限时模式
     let gameMode='NORMAL', timeRemaining=60, timerInterval=null;
-    // 主题皮肤
     let currentTheme='default';
+    // Lock Delay
+    let lockTimer=null, lockMoveCount=0, isLocking=false;
+    const LOCK_DELAY=500, MAX_LOCK_MOVES=15;
+    // DAS/ARR
+    let dasDelay=167, arrRate=33;
+    let dasTimerId=null, arrTimerId=null, dasDir=0;
+    let softDropping=false;
+    let lastKickIndex=0;
+    // T-Spin tracking
+    let lastMoveWasKick=false, tSpinThisPlacement=false;
+    // Game timing
+    let gameStartTime=0;
+    let survivalInterval=null;
+    // Player stats
+    let playerStats={ gamesPlayed:0, totalScore:0, totalLines:0, maxCombo:0, tSpinCount:0, tetrisCount:0, bestScore:0, sprintBest:999999, ultraBest:0 };
+    let unlockedAchs=new Set();
+    const ACHIEVEMENTS=[
+        {id:'first',name:'初出茅庐',desc:'完成第一局游戏',icon:'🎮',check:s=>s.gamesPlayed>=1},
+        {id:'tetris',name:'四行清场',desc:'一次性消除4行',icon:'🔥',check:s=>s.tetrisCount>=1},
+        {id:'combo5',name:'连击大师',desc:'达成5连击',icon:'💥',check:s=>s.maxCombo>=5},
+        {id:'tspin',name:'T-Spin新手',desc:'完成首次T-Spin',icon:'💠',check:s=>s.tSpinCount>=1},
+        {id:'sprint60',name:'音速启动',desc:'Sprint模式低于60秒',icon:'⚡',check:s=>s.sprintBest<60},
+        {id:'score10k',name:'万分俱乐部',desc:'单局分数超过10000',icon:'🏆',check:s=>s.bestScore>=10000}
+    ];
 
     function changeTheme(theme) {
         currentTheme = theme;
@@ -408,12 +513,12 @@
 
     function getLocalDateString(){ let d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
-    // IndexedDB 初始化（确保索引创建）
+    // IndexedDB 初始化
     function initDatabase() {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(DB_NAME, DB_VERSION);
             request.onerror = e => reject(e.target.error);
-            request.onsuccess = e => { db = e.target.result; loadHighScore(); loadSettings(); resolve(db); };
+            request.onsuccess = e => { db = e.target.result; loadHighScore(); loadSettings(); loadPlayerStats(); loadAchievements(); resolve(db); };
             request.onupgradeneeded = e => {
                 let db = e.target.result;
                 if (!db.objectStoreNames.contains(RECORD_STORE)) {
@@ -423,6 +528,12 @@
                 }
                 if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
                     db.createObjectStore(SETTINGS_STORE, { keyPath: 'key' });
+                }
+                if (!db.objectStoreNames.contains(STATS_STORE)) {
+                    db.createObjectStore(STATS_STORE, { keyPath: 'key' });
+                }
+                if (!db.objectStoreNames.contains(ACH_STORE)) {
+                    db.createObjectStore(ACH_STORE, { keyPath: 'id' });
                 }
             };
         });
@@ -441,7 +552,7 @@
     function saveGameRecord(){
         if(!db)return;
         let tx=db.transaction([RECORD_STORE],'readwrite'),store=tx.objectStore(RECORD_STORE);
-        store.add({ score, lines, level, date:getLocalDateString(), time:new Date().toLocaleTimeString(), difficulty:currentDifficulty, gridSize:`${COLS}x${ROWS}`, timestamp:Date.now() });
+        store.add({ score, lines, level, gameMode, date:getLocalDateString(), time:new Date().toLocaleTimeString(), difficulty:currentDifficulty, gridSize:`${COLS}x${ROWS}`, timestamp:Date.now() });
         if(score>highScore){ highScore=score; saveHighScore(); document.getElementById('highScore').textContent=highScore; }
     }
     function getLeaderboard(limit=50){
@@ -480,6 +591,73 @@
         }
     }
 
+    // 玩家统计
+    function loadPlayerStats(){
+        if(!db) return;
+        let tx=db.transaction([STATS_STORE],'readonly');
+        let req=tx.objectStore(STATS_STORE).get('stats');
+        req.onsuccess=()=>{ if(req.result) playerStats=req.result.value; updateStatsDisplay(); };
+    }
+    function savePlayerStats(){
+        if(!db) return;
+        let tx=db.transaction([STATS_STORE],'readwrite');
+        tx.objectStore(STATS_STORE).put({key:'stats',value:playerStats});
+    }
+    function updatePlayerStats(){
+        playerStats.gamesPlayed++;
+        playerStats.totalScore+=score;
+        playerStats.totalLines+=lines;
+        if(comboCount>playerStats.maxCombo) playerStats.maxCombo=comboCount;
+        if(score>playerStats.bestScore) playerStats.bestScore=score;
+        if(tSpinThisPlacement) playerStats.tSpinCount++;
+        savePlayerStats();
+    }
+    function updateStatsDisplay(){
+        let el=document.getElementById('statsContent');
+        if(!el) return;
+        el.innerHTML=`<div>总局: ${playerStats.gamesPlayed}</div><div>总分: ${playerStats.totalScore}</div><div>总消除: ${playerStats.totalLines}</div><div>最高连击: ${playerStats.maxCombo}</div><div>最佳分数: ${playerStats.bestScore}</div><div>T-Spin: ${playerStats.tSpinCount}</div>`;
+    }
+
+    // 成就
+    function loadAchievements(){
+        if(!db) return;
+        let tx=db.transaction([ACH_STORE],'readonly');
+        let req=tx.objectStore(ACH_STORE).getAll();
+        req.onsuccess=()=>{ if(req.result) req.result.forEach(a=>unlockedAchs.add(a.id)); };
+    }
+    function checkAchievements(){
+        if(!db) return;
+        let newly=[];
+        ACHIEVEMENTS.forEach(a=>{
+            if(!unlockedAchs.has(a.id) && a.check(playerStats)){
+                unlockedAchs.add(a.id);
+                newly.push(a);
+                try{ let tx=db.transaction([ACH_STORE],'readwrite'); tx.objectStore(ACH_STORE).add({id:a.id,name:a.name,unlockedAt:Date.now()}); }catch(e){}
+            }
+        });
+        newly.forEach(a=>showAchievementToast(a));
+    }
+    function showAchievementToast(a){
+        let el=document.createElement('div');
+        el.className='achievement-toast';
+        el.innerHTML=`<span class="ach-icon">${a.icon}</span><span class="ach-title">成就解锁: ${a.name}</span><span class="ach-desc">${a.desc}</span>`;
+        document.getElementById('gameArea').appendChild(el);
+        setTimeout(()=>el.remove(),2500);
+    }
+    function showAchievements(){
+        document.getElementById('gameOver').style.display='none';
+        document.getElementById('settingsPanel').style.display='none';
+        let html='<div style="padding:20px;text-align:center">';
+        ACHIEVEMENTS.forEach(a=>{
+            let u=unlockedAchs.has(a.id);
+            html+=`<div style="margin:12px 0;opacity:${u?1:0.4}"><span style="font-size:30px">${a.icon}</span><div style="font-weight:bold;margin-top:4px">${a.name}</div><div style="font-size:12px;color:#aaa">${a.desc}</div><div style="font-size:11px;color:${u?'#4caf50':'#555'}">${u?'✓ 已解锁':'🔒 未解锁'}</div></div>`;
+        });
+        html+='</div><div class="leaderboard-buttons"><button class="small-btn" onclick="toggleSettings()">返回</button></div>';
+        let panel=document.getElementById('leaderboardPanel');
+        panel.innerHTML=`<div class="settings-title">成就列表</div>${html}`;
+        panel.style.display='block';
+    }
+
     function loadSettings(){
         if(!db)return;
         let tx=db.transaction([SETTINGS_STORE],'readonly'),store=tx.objectStore(SETTINGS_STORE),req=store.get('gameSettings');
@@ -492,6 +670,8 @@
                 soundEnabled=s.soundEnabled||false;
                 gameMode=s.gameMode||'NORMAL';
                 currentTheme=s.theme||'default';
+                dasDelay=s.dasDelay||167;
+                arrRate=s.arrRate||33;
                 changeTheme(currentTheme);
                 let gridSize=s.gridSize||'12x24';
                 applyGridSize(gridSize);
@@ -501,42 +681,119 @@
                 document.getElementById('ghostPieceCheck').checked=showGhostPiece;
                 document.getElementById('soundCheck').checked=soundEnabled;
                 document.getElementById('gameModeSelect').value=gameMode;
+                document.getElementById('dasSlider').value=dasDelay;
+                document.getElementById('arrSlider').value=arrRate;
+                document.getElementById('dasValue').textContent=dasDelay;
+                document.getElementById('arrValue').textContent=arrRate;
                 dropSpeed=DIFFICULTY[currentDifficulty].speed;
                 if(soundEnabled) initAudio();
-                if(gameMode==='TIMED'){ document.getElementById('timerDisplay').style.display='flex'; timeRemaining=60; updateTimerDisplay(); if(timerInterval) clearInterval(timerInterval); }
-                else document.getElementById('timerDisplay').style.display='none';
             }
         };
     }
     function saveSettings(){
-        let settings={ difficulty:document.getElementById('difficultySelect').value, pieceMode:document.getElementById('pieceModeSelect').value, gridSize:document.getElementById('gridSizeSelect').value, showGhostPiece:document.getElementById('ghostPieceCheck').checked, soundEnabled:document.getElementById('soundCheck').checked, gameMode:document.getElementById('gameModeSelect').value, theme:currentTheme };
+        dasDelay=parseInt(document.getElementById('dasSlider').value);
+        arrRate=parseInt(document.getElementById('arrSlider').value);
+        let settings={ difficulty:document.getElementById('difficultySelect').value, pieceMode:document.getElementById('pieceModeSelect').value, gridSize:document.getElementById('gridSizeSelect').value, showGhostPiece:document.getElementById('ghostPieceCheck').checked, soundEnabled:document.getElementById('soundCheck').checked, gameMode:document.getElementById('gameModeSelect').value, theme:currentTheme, dasDelay:dasDelay, arrRate:arrRate };
         let tx=db.transaction([SETTINGS_STORE],'readwrite');
         tx.objectStore(SETTINGS_STORE).put({key:'gameSettings',value:settings});
         currentDifficulty=settings.difficulty; pieceGenerationMode=settings.pieceMode; showGhostPiece=settings.showGhostPiece; soundEnabled=settings.soundEnabled; gameMode=settings.gameMode;
         applyGridSize(settings.gridSize);
         dropSpeed=DIFFICULTY[currentDifficulty].speed;
         if(soundEnabled) initAudio();
-        if(gameMode==='TIMED'){ document.getElementById('timerDisplay').style.display='flex'; if(!timerInterval && gameRunning && !isPaused) startTimer(); }
-        else { document.getElementById('timerDisplay').style.display='none'; if(timerInterval) clearInterval(timerInterval); }
         document.getElementById('settingsPanel').style.display='none';
         restart();
-        alert('设置已保存');
     }
 
     function applyGridSize(sizeKey){ let size=GRID_SIZES[sizeKey]; COLS=size.cols; ROWS=size.rows; BLOCK_SIZE=size.blockSize; updateCanvasSize(); resetBoard(); }
     function updateCanvasSize(){ canvas.width=COLS*BLOCK_SIZE; canvas.height=ROWS*BLOCK_SIZE; let maxHeight=window.innerHeight*0.6; if(canvas.height>maxHeight){ let scale=maxHeight/canvas.height; canvas.style.width=(canvas.width*scale)+'px'; canvas.style.height=(canvas.height*scale)+'px'; } else { canvas.style.width='auto'; canvas.style.height='auto'; } resetBoard(); }
     function resetBoard(){ board=Array(ROWS).fill().map(()=>Array(COLS).fill(0)); }
     function initBags(){ bag=[]; refillBag(bag); }
-    function refillBag(bagArray){ let indices=[0,1,2,3,4,5,6]; for(let i=indices.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [indices[i],indices[j]]=[indices[j],indices[i]]; } indices.forEach(idx=>bagArray.push({...SHAPES[idx]})); }
-    function getNextPiece(){ let piece; if(pieceGenerationMode==='BAG7'){ if(bag.length===0) refillBag(bag); piece=bag.shift(); } else { let idx=Math.floor(Math.random()*SHAPES.length); piece={...SHAPES[idx]}; } drawNextPiece(piece); return piece; }
+    function refillBag(bagArray){ let indices=[0,1,2,3,4,5,6]; for(let i=indices.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [indices[i],indices[j]]=[indices[j],indices[i]]; } indices.forEach(idx=>bagArray.push({...SHAPES[idx],rotation:0})); }
+    function getNextPiece(){ let piece; if(pieceGenerationMode==='BAG7'){ if(bag.length===0) refillBag(bag); piece=bag.shift(); } else { let idx=Math.floor(Math.random()*SHAPES.length); piece={...SHAPES[idx],rotation:0}; } drawNextPiece(piece); return piece; }
     function changePieceMode(mode){ pieceGenerationMode=mode; if(mode==='BAG7') initBags(); }
-    function spawnPiece(){ currentPiece=nextPiece; currentX=Math.floor((COLS-currentPiece.shape[0].length)/2); currentY=0; nextPiece=getNextPiece(); canHold=true; updateGhostPiece(); if(collide(currentX,currentY,currentPiece)) gameOver(); }
+    function spawnPiece(){ currentPiece=nextPiece; currentX=Math.floor((COLS-currentPiece.shape[0].length)/2); currentY=0; nextPiece=getNextPiece(); canHold=true; lastMoveWasKick=false; updateGhostPiece(); if(collide(currentX,currentY,currentPiece)) gameOver(false); }
     function updateGhostPiece(){ if(!currentPiece) return; ghostPieceY=currentY; while(!collide(currentX,ghostPieceY+1,currentPiece)) ghostPieceY++; }
     function collide(x,y,piece){ for(let py=0;py<piece.shape.length;py++) for(let px=0;px<piece.shape[py].length;px++) if(piece.shape[py][px]){ let nx=x+px, ny=y+py; if(nx<0||nx>=COLS||ny>=ROWS) return true; if(ny>=0 && board[ny][nx]) return true; } return false; }
-    function rotate(piece){ let rows=piece.shape.length, cols=piece.shape[0].length; let rotated=Array(cols).fill().map(()=>Array(rows).fill(0)); for(let y=0;y<rows;y++) for(let x=0;x<cols;x++) rotated[x][rows-1-y]=piece.shape[y][x]; return {...piece, shape:rotated}; }
-    function merge(){ for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++) if(currentPiece.shape[y][x]) board[currentY+y][currentX+x]=currentPiece.color; playSound('drop'); }
 
-    // 消除行 + Combo + 粒子特效
+    // SRS 旋转
+    function srsRotate(piece){
+        let rows=piece.shape.length, cols=piece.shape[0].length;
+        let newRot=(piece.rotation+1)%4;
+        let rotated=Array(cols).fill().map(()=>Array(rows).fill(0));
+        for(let y=0;y<rows;y++) for(let x=0;x<cols;x++) rotated[x][rows-1-y]=piece.shape[y][x];
+        return {...piece,shape:rotated,rotation:newRot};
+    }
+    function rotatePiece(){
+        if(!currentPiece||isPaused) return;
+        let rotated=srsRotate(currentPiece);
+        let kickKey=`${currentPiece.rotation}>${rotated.rotation}`;
+        if(currentPiece.name==='O'){
+            if(!collide(currentX,currentY,rotated)){ currentPiece=rotated; lastMoveWasKick=false; }
+            else return;
+        } else {
+            let kicks=(currentPiece.name==='I'?WK_I:WK_JLSTZ)[kickKey]||[[0,0]];
+            let success=false;
+            for(let i=0;i<kicks.length;i++){
+                if(!collide(currentX+kicks[i][0],currentY-kicks[i][1],rotated)){
+                    currentX+=kicks[i][0]; currentY-=kicks[i][1];
+                    currentPiece=rotated;
+                    lastKickIndex=i;
+                    lastMoveWasKick=(i>0);
+                    success=true;
+                    break;
+                }
+            }
+            if(!success) return;
+        }
+        if(isLocking){ lockMoveCount++; resetLockTimer(); }
+        updateGhostPiece();
+        playSound('rotate');
+    }
+
+    function holdPiece(){
+        if(!currentPiece||isPaused||!canHold) return;
+        canHold=false;
+        if(heldPiece){ let temp=currentPiece; currentPiece=heldPiece; heldPiece=temp; currentPiece.rotation=0; }
+        else { heldPiece=currentPiece; currentPiece=null; spawnPiece(); }
+        currentX=Math.floor((COLS-currentPiece.shape[0].length)/2); currentY=0;
+        isLocking=false; lockTimer=null; lockMoveCount=0;
+        updateGhostPiece(); drawHoldPiece(); playSound('hold');
+    }
+
+    function merge(){ for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++) if(currentPiece.shape[y][x]) board[currentY+y][currentX+x]=currentPiece.color; }
+
+    // T-Spin 检测
+    function checkTSpinPreMerge(){
+        if(!currentPiece || currentPiece.name!=='T') return false;
+        let corners=0, px=currentX, py=currentY;
+        let pieceCells=new Set();
+        for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++) if(currentPiece.shape[y][x]) pieceCells.add(`${px+x},${py+y}`);
+        let cp=[[px,py],[px+2,py],[px,py+2],[px+2,py+2]];
+        for(let [cx,cy] of cp){
+            if(cx<0||cx>=COLS||cy>=ROWS){ corners++; continue; }
+            if(cy>=0 && board[cy][cx]){ corners++; continue; }
+            if(pieceCells.has(`${cx},${cy}`)){ corners++; continue; }
+        }
+        return corners>=3;
+    }
+
+    // Lock delay
+    function resetLockTimer(){ lockTimer=performance.now(); }
+    function startLocking(){
+        if(!isLocking){ isLocking=true; lockTimer=performance.now(); lockMoveCount=0; }
+    }
+    function doLock(){
+        if(!currentPiece) return;
+        isLocking=false; lockTimer=null;
+        tSpinThisPlacement=checkTSpinPreMerge() && lastMoveWasKick;
+        if(tSpinThisPlacement) playerStats.tSpinCount=(playerStats.tSpinCount||0)+1;
+        merge();
+        clearLines();
+        spawnPiece();
+        if(gameMode==='TIMED' && timeRemaining<=0) gameOver(false);
+    }
+
+    // 消除行 + T-Spin + Combo
     function clearLines(){
         let linesCleared=0;
         for(let y=ROWS-1;y>=0;y--){
@@ -549,28 +806,43 @@
             }
         }
         if(linesCleared===0){ comboCount=0; document.getElementById('combo').textContent='0'; return; }
+        if(linesCleared===4) playerStats.tetrisCount=(playerStats.tetrisCount||0)+1;
         comboCount++;
-        let comboBonus = 1 + (comboCount-1)*0.25;
+        let comboBonus=1+(comboCount-1)*0.25;
         if(comboBonus>3) comboBonus=3;
         let lineScore=0;
-        switch(linesCleared){ case 1: lineScore=100; break; case 2: lineScore=300; break; case 3: lineScore=500; break; case 4: lineScore=800; break; }
+        if(tSpinThisPlacement){
+            switch(linesCleared){ case 1:lineScore=400;break; case 2:lineScore=800;break; case 3:lineScore=1200;break; default:lineScore=1600;break; }
+            let pop=document.createElement('div'); pop.className='combo-pop'; pop.textContent=`T-Spin! +${lineScore*level}`; document.getElementById('gameArea').appendChild(pop); setTimeout(()=>pop.remove(),1000);
+            playSound('tspin');
+        } else {
+            switch(linesCleared){ case 1:lineScore=100;break; case 2:lineScore=300;break; case 3:lineScore=500;break; case 4:lineScore=800;break; }
+            if(linesCleared>=2 && comboCount>=2) playSound('combo');
+            else playSound('line');
+        }
         let multiplier=DIFFICULTY[currentDifficulty].scoreMultiplier;
-        let addScore = Math.floor(lineScore * level * multiplier * comboBonus);
-        score += addScore;
-        lines += linesCleared;
+        let addScore=Math.floor(lineScore*level*multiplier*comboBonus);
+        score+=addScore;
+        lines+=linesCleared;
         if(comboCount>=2){
             let pop=document.createElement('div'); pop.className='combo-pop'; pop.textContent=`${comboCount} Combo! x${comboBonus.toFixed(1)}`; document.getElementById('gameArea').appendChild(pop); setTimeout(()=>pop.remove(),1000);
-            playSound('combo');
-        } else playSound('line');
+        }
         let newLevel=Math.floor(lines/10)+1;
         if(newLevel>level){ level=newLevel; updateSpeed(); playSound('levelup'); }
         updateUI();
         document.getElementById('combo').textContent=comboCount;
+        if(gameMode==='SPRINT' && lines>=40) gameOver(true);
+        if(gameMode==='MARATHON' && level>=15) gameOver(true);
     }
     function createParticle(x,y){
-        let particleDiv=document.createElement('div'); particleDiv.className='particle'; let angle=Math.random()*Math.PI*2, speed=2+Math.random()*4; let dx=Math.cos(angle)*speed, dy=Math.sin(angle)*speed; particleDiv.style.left=(canvas.offsetLeft+x)+'px'; particleDiv.style.top=(canvas.offsetTop+y)+'px'; particleDiv.style.setProperty('--dx',dx*10+'px'); particleDiv.style.setProperty('--dy',dy*10+'px'); particleDiv.style.background=`hsl(${Math.random()*360},70%,60%)`; document.body.appendChild(particleDiv); setTimeout(()=>particleDiv.remove(),600);
+        let p=document.createElement('div'); p.className='particle';
+        let angle=Math.random()*Math.PI*2, speed=2+Math.random()*4;
+        p.style.left=(canvas.offsetLeft+x)+'px'; p.style.top=(canvas.offsetTop+y)+'px';
+        p.style.setProperty('--dx',Math.cos(angle)*speed*10+'px'); p.style.setProperty('--dy',Math.sin(angle)*speed*10+'px');
+        p.style.background=`hsl(${Math.random()*360},70%,60%)`;
+        document.body.appendChild(p); setTimeout(()=>p.remove(),600);
     }
-    function updateSpeed(){ let baseSpeed=DIFFICULTY[currentDifficulty].speed; dropSpeed=Math.max(100, baseSpeed - (level-1)*50); }
+    function updateSpeed(){ let baseSpeed=DIFFICULTY[currentDifficulty].speed; dropSpeed=Math.max(100, baseSpeed-(level-1)*50); }
     function changeDifficulty(d){ currentDifficulty=d; dropSpeed=DIFFICULTY[d].speed; updateSpeed(); }
 
     // 绘制函数
@@ -580,8 +852,22 @@
         for(let x=0;x<=COLS;x++){ ctx.beginPath(); ctx.moveTo(x*BLOCK_SIZE,0); ctx.lineTo(x*BLOCK_SIZE,canvas.height); ctx.stroke(); }
         for(let y=0;y<=ROWS;y++){ ctx.beginPath(); ctx.moveTo(0,y*BLOCK_SIZE); ctx.lineTo(canvas.width,y*BLOCK_SIZE); ctx.stroke(); }
         for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) if(board[y][x]) drawBlock(x,y,board[y][x],ctx,BLOCK_SIZE);
-        if(showGhostPiece && currentPiece){ ctx.globalAlpha=0.3; for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++) if(currentPiece.shape[y][x]) drawBlock(currentX+x,ghostPieceY+y,currentPiece.color,ctx,BLOCK_SIZE); ctx.globalAlpha=1; }
-        if(currentPiece) for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++) if(currentPiece.shape[y][x]) drawBlock(currentX+x,currentY+y,currentPiece.color,ctx,BLOCK_SIZE);
+        if(showGhostPiece && currentPiece){
+            ctx.globalAlpha=0.12;
+            for(let y=currentY;y<=ghostPieceY;y++){
+                for(let py=0;py<currentPiece.shape.length;py++) for(let px=0;px<currentPiece.shape[py].length;px++)
+                    if(currentPiece.shape[py][px]) drawBlock(currentX+px,y+py,currentPiece.color,ctx,BLOCK_SIZE);
+            }
+            ctx.globalAlpha=0.3;
+            for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++)
+                if(currentPiece.shape[y][x]) drawBlock(currentX+x,ghostPieceY+y,currentPiece.color,ctx,BLOCK_SIZE);
+            ctx.globalAlpha=1;
+        }
+        if(currentPiece){
+            let isLockingFlash=isLocking && Math.floor((performance.now()-lockTimer)/100)%2===0;
+            for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++)
+                if(currentPiece.shape[y][x]) drawBlock(currentX+x,currentY+y,isLockingFlash?8:currentPiece.color,ctx,BLOCK_SIZE);
+        }
     }
     function drawBlock(x,y,color,context,blockSize,offsetX=0,offsetY=0){
         let ps=blockSize-1, xp=offsetX+x*blockSize, yp=offsetY+y*blockSize;
@@ -589,65 +875,217 @@
         context.fillStyle='rgba(255,255,255,0.3)'; context.fillRect(xp,yp,ps,2); context.fillRect(xp,yp,2,ps);
         context.fillStyle='rgba(0,0,0,0.3)'; context.fillRect(xp+ps-2,yp,2,ps); context.fillRect(xp,yp+ps-2,ps,2);
     }
-    function getColor(n){ let cols=['','#00bcd4','#ff9800','#9c27b0','#4caf50','#f44336','#2196f3','#ffeb3b']; return cols[n]||'#fff'; }
+    function getColor(n){ let cols=['','#00bcd4','#ff9800','#9c27b0','#4caf50','#f44336','#2196f3','#ffeb3b','#ff4444']; return cols[n]||'#fff'; }
     function drawNextPiece(piece){ if(!piece)return; nextPieceCanvas.width=nextPieceCanvas.offsetWidth; nextPieceCanvas.height=nextPieceCanvas.offsetHeight; nextPieceCtx.fillStyle='rgba(0,0,0,0.3)'; nextPieceCtx.fillRect(0,0,nextPieceCanvas.width,nextPieceCanvas.height); let shape=piece.shape, sz=11, tw=shape[0].length*sz, th=shape.length*sz, sx=(nextPieceCanvas.width-tw)/2, sy=(nextPieceCanvas.height-th)/2; for(let y=0;y<shape.length;y++) for(let x=0;x<shape[0].length;x++) if(shape[y][x]) drawBlock(x,y,piece.color,nextPieceCtx,sz,sx,sy); nextPieceCtx.strokeStyle='var(--accent)'; nextPieceCtx.strokeRect(sx,sy,tw,th); }
     function drawHoldPiece(){ holdCanvas.width=holdCanvas.offsetWidth; holdCanvas.height=holdCanvas.offsetHeight; holdCtx.fillStyle='rgba(0,0,0,0.3)'; holdCtx.fillRect(0,0,holdCanvas.width,holdCanvas.height); if(!heldPiece)return; let shape=heldPiece.shape, sz=11, tw=shape[0].length*sz, th=shape.length*sz, sx=(holdCanvas.width-tw)/2, sy=(holdCanvas.height-th)/2; for(let y=0;y<shape.length;y++) for(let x=0;x<shape[0].length;x++) if(shape[y][x]) drawBlock(x,y,heldPiece.color,holdCtx,sz,sx,sy); holdCtx.strokeStyle='var(--accent)'; holdCtx.strokeRect(sx,sy,tw,th); }
 
     // 游戏循环
-    function gameLoop(timestamp){ if(!gameRunning){ if(animationFrameId) cancelAnimationFrame(animationFrameId); return; } if(!isPaused && timestamp-lastDrop>dropSpeed){ drop(); lastDrop=timestamp; } draw(); animationFrameId=requestAnimationFrame(gameLoop); }
-    function drop(){ if(!currentPiece) return; if(!collide(currentX,currentY+1,currentPiece)){ currentY++; updateGhostPiece(); } else { merge(); clearLines(); spawnPiece(); if(gameMode==='TIMED' && timeRemaining<=0) gameOver(); } }
-    function move(dir){ if(!currentPiece||isPaused) return; if(!collide(currentX+dir,currentY,currentPiece)){ currentX+=dir; updateGhostPiece(); playSound('move'); } }
-
-    // ========== 优化后的移动控制（零延迟 + 连续移动） ==========
-    function startSoftMove(dir) {
-        if (!gameRunning || isPaused) return;
-        softMoveDirection = dir;
-        move(dir);  // 立即移动一次
-        if (softMoveInterval) clearInterval(softMoveInterval);
-        softMoveInterval = setInterval(() => {
-            if (softMoveDirection !== 0) move(softMoveDirection);
-        }, MOVE_REPEAT_INTERVAL);
+    function gameLoop(timestamp){
+        if(!gameRunning){ if(animationFrameId) cancelAnimationFrame(animationFrameId); return; }
+        if(!isPaused){
+            // Lock delay check
+            if(isLocking){
+                if(timestamp-lockTimer>=LOCK_DELAY) doLock();
+            }
+            // 20G soft drop
+            else if(softDropping && currentPiece){
+                let moved=false;
+                while(!collide(currentX,currentY+1,currentPiece)){ currentY++; score++; moved=true; }
+                if(moved){ updateGhostPiece(); updateUI(); }
+                startLocking();
+            }
+            // Normal gravity
+            else if(timestamp-lastDrop>dropSpeed){
+                drop();
+                lastDrop=timestamp;
+            }
+        }
+        draw();
+        animationFrameId=requestAnimationFrame(gameLoop);
     }
-    function stopSoftMove() {
-        if (softMoveInterval) { clearInterval(softMoveInterval); softMoveInterval = null; }
-        softMoveDirection = 0;
+    function drop(){
+        if(!currentPiece) return;
+        if(!collide(currentX,currentY+1,currentPiece)){
+            currentY++; updateGhostPiece();
+            isLocking=false;
+        } else {
+            startLocking();
+        }
+    }
+    function move(dir){
+        if(!currentPiece||isPaused) return false;
+        if(!collide(currentX+dir,currentY,currentPiece)){
+            currentX+=dir; updateGhostPiece(); playSound('move');
+            if(isLocking){ lockMoveCount++; resetLockTimer(); if(lockMoveCount>=MAX_LOCK_MOVES) doLock(); }
+            return true;
+        }
+        return false;
     }
 
-    function rotatePiece(){ if(!currentPiece||isPaused) return; let rotated=rotate(currentPiece); if(!collide(currentX,currentY,rotated)) currentPiece=rotated; else if(!collide(currentX+1,currentY,rotated)){ currentX++; currentPiece=rotated; } else if(!collide(currentX-1,currentY,rotated)){ currentX--; currentPiece=rotated; } else if(!collide(currentX,currentY-1,rotated)){ currentY--; currentPiece=rotated; } updateGhostPiece(); playSound('rotate'); }
-    function holdPiece(){ if(!currentPiece||isPaused||!canHold) return; if(heldPiece){ let temp=currentPiece; currentPiece=heldPiece; heldPiece=temp; } else { heldPiece=currentPiece; currentPiece=null; spawnPiece(); } currentX=Math.floor((COLS-currentPiece.shape[0].length)/2); currentY=0; canHold=false; updateGhostPiece(); drawHoldPiece(); playSound('hold'); }
-    function startSoftDrop(){ if(!gameRunning||isPaused||isSoftDropping) return; isSoftDropping=true; if(!collide(currentX,currentY+1,currentPiece)){ currentY++; score+=1; updateUI(); } softDropInterval=setInterval(()=>{ if(isSoftDropping && !collide(currentX,currentY+1,currentPiece)){ currentY++; score+=1; updateUI(); } else stopSoftDrop(); },100); }
-    function stopSoftDrop(){ if(softDropInterval)clearInterval(softDropInterval); isSoftDropping=false; }
-    function hardDrop(){ if(!currentPiece||isPaused) return; let dist=0; while(!collide(currentX,currentY+1,currentPiece)){ currentY++; dist++; } score+=dist*2; updateUI(); merge(); clearLines(); spawnPiece(); playSound('harddrop'); }
-    function startTimer(){ if(timerInterval) clearInterval(timerInterval); timerInterval=setInterval(()=>{ if(!gameRunning||isPaused) return; if(timeRemaining<=0){ clearInterval(timerInterval); gameOver(); } else { timeRemaining--; updateTimerDisplay(); } },1000); }
+    // DAS/ARR 系统
+    function startDAS(dir){
+        if(!gameRunning||isPaused||!currentPiece) return;
+        dasDir=dir;
+        move(dir);
+        clearDAS();
+        dasTimerId=setTimeout(()=>{ arrTimerId=setInterval(()=>{ if(dasDir!==0&&currentPiece&&!isPaused) move(dasDir); else clearDAS(); },arrRate); },dasDelay);
+    }
+    function clearDAS(){
+        if(dasTimerId){clearTimeout(dasTimerId);dasTimerId=null;}
+        if(arrTimerId){clearInterval(arrTimerId);arrTimerId=null;}
+        dasDir=0;
+    }
+    function startSoftDrop(){ softDropping=true; }
+    function stopSoftDrop(){ softDropping=false; }
+
+    function hardDrop(){
+        if(!currentPiece||isPaused) return;
+        let dist=0;
+        while(!collide(currentX,currentY+1,currentPiece)){ currentY++; dist++; }
+        score+=dist*2;
+        // Shockwave effect
+        let el=document.createElement('div'); el.className='shockwave';
+        el.style.left=(canvas.offsetLeft+(currentX+currentPiece.shape[0].length/2)*BLOCK_SIZE-60)+'px';
+        el.style.top=(canvas.offsetTop+(currentY+currentPiece.shape.length)*BLOCK_SIZE-60)+'px';
+        document.body.appendChild(el); setTimeout(()=>el.remove(),500);
+        isLocking=false;
+        tSpinThisPlacement=checkTSpinPreMerge() && lastMoveWasKick;
+        if(tSpinThisPlacement) playerStats.tSpinCount=(playerStats.tSpinCount||0)+1;
+        merge(); clearLines(); spawnPiece();
+        updateUI(); playSound('harddrop');
+    }
+
+    // Timer
+    function startTimer(){ if(timerInterval) clearInterval(timerInterval); timerInterval=setInterval(()=>{ if(!gameRunning||isPaused) return; if(timeRemaining<=0){ clearInterval(timerInterval); gameOver(false); } else { timeRemaining--; updateTimerDisplay(); } },1000); }
+    function startSurvival(){ if(survivalInterval) clearInterval(survivalInterval); survivalInterval=setInterval(()=>{ if(!gameRunning||isPaused) return; let newRow=Array(COLS).fill(1); let hole=Math.floor(Math.random()*COLS); newRow[hole]=0; board.shift(); board.push(newRow); if(board[0].some(c=>c)) gameOver(false); },10000); }
+    function stopSurvival(){ if(survivalInterval){clearInterval(survivalInterval);survivalInterval=null;} }
     function updateTimerDisplay(){ let mins=Math.floor(timeRemaining/60), secs=timeRemaining%60; document.getElementById('timer').textContent=`${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`; if(timeRemaining<=10) playSound('tick'); }
-    async function gameOver(){ gameRunning=false; if(timerInterval)clearInterval(timerInterval); await saveGameRecord(); document.getElementById('finalScore').textContent=score; document.getElementById('gameOver').style.display='block'; playSound('gameOver'); stopSoftDrop(); stopSoftMove(); }
+
+    function gameOver(win){
+        gameRunning=false;
+        if(timerInterval)clearInterval(timerInterval);
+        stopSurvival(); stopSoftDrop(); clearDAS();
+        isLocking=false; lockTimer=null;
+        saveGameRecord(); updatePlayerStats(); checkAchievements();
+        let title=win?'恭喜通关!':'游戏结束';
+        let sub='';
+        if(gameMode==='SPRINT' && win){ sub=`用时: ${((performance.now()-gameStartTime)/1000).toFixed(1)}秒`; playerStats.sprintBest=Math.min(playerStats.sprintBest,(performance.now()-gameStartTime)/1000); savePlayerStats(); }
+        else if(gameMode==='ULTRA'){ sub=`最终分数: ${score}`; }
+        else if(gameMode==='MARATHON' && win){ sub='马拉松完成!'; }
+        else if(gameMode==='SURVIVAL'){ sub=`坚持 ${Math.floor((performance.now()-gameStartTime)/1000)}秒`; }
+        document.getElementById('gameOverTitle').textContent=title;
+        document.getElementById('gameOverSub').textContent=sub;
+        document.getElementById('finalScore').textContent=score;
+        document.getElementById('finalLines').textContent=lines;
+        document.getElementById('gameOver').style.display='block';
+        playSound('gameOver');
+        updateStatsDisplay();
+    }
     function updateUI(){ document.getElementById('score').textContent=score; document.getElementById('level').textContent=level; document.getElementById('lines').textContent=lines; document.getElementById('highScore').textContent=highScore; document.getElementById('combo').textContent=comboCount; }
-    async function restart(){ if(animationFrameId) cancelAnimationFrame(animationFrameId); stopSoftDrop(); stopSoftMove(); if(timerInterval) clearInterval(timerInterval); resetBoard(); currentPiece=null; nextPiece=null; heldPiece=null; canHold=true; score=0; level=1; lines=0; comboCount=0; gameRunning=true; isPaused=false; lastDrop=0; timeRemaining=60; updateTimerDisplay(); currentDifficulty=document.getElementById('difficultySelect').value; pieceGenerationMode=document.getElementById('pieceModeSelect').value; gameMode=document.getElementById('gameModeSelect').value; showGhostPiece=document.getElementById('ghostPieceCheck').checked; soundEnabled=document.getElementById('soundCheck').checked; if(pieceGenerationMode==='BAG7') initBags(); updateSpeed(); updateUI(); document.getElementById('gameOver').style.display='none'; document.getElementById('leaderboardPanel').style.display='none'; document.getElementById('settingsPanel').style.display='none'; document.getElementById('pauseBtn').textContent='暂停'; nextPiece=getNextPiece(); spawnPiece(); drawHoldPiece(); if(gameMode==='TIMED'){ document.getElementById('timerDisplay').style.display='flex'; startTimer(); } else document.getElementById('timerDisplay').style.display='none'; lastDrop=0; animationFrameId=requestAnimationFrame(gameLoop); }
-    function togglePause(){ isPaused=!isPaused; document.getElementById('pauseBtn').textContent=isPaused?'继续':'暂停'; if(isPaused){ stopSoftDrop(); stopSoftMove(); if(timerInterval) clearInterval(timerInterval); } else { if(gameMode==='TIMED' && gameRunning && timeRemaining>0) startTimer(); } }
+    function restart(){
+        if(animationFrameId) cancelAnimationFrame(animationFrameId);
+        stopSoftDrop(); clearDAS();
+        if(timerInterval) clearInterval(timerInterval);
+        stopSurvival();
+        resetBoard();
+        currentPiece=null; nextPiece=null; heldPiece=null; canHold=true;
+        score=0; level=1; lines=0; comboCount=0;
+        gameRunning=true; isPaused=false; lastDrop=0;
+        timeRemaining=60; updateTimerDisplay();
+        isLocking=false; lockTimer=null; lockMoveCount=0;
+        lastMoveWasKick=false; tSpinThisPlacement=false;
+        currentDifficulty=document.getElementById('difficultySelect').value;
+        pieceGenerationMode=document.getElementById('pieceModeSelect').value;
+        gameMode=document.getElementById('gameModeSelect').value;
+        showGhostPiece=document.getElementById('ghostPieceCheck').checked;
+        soundEnabled=document.getElementById('soundCheck').checked;
+        dasDelay=parseInt(document.getElementById('dasSlider').value);
+        arrRate=parseInt(document.getElementById('arrSlider').value);
+        if(pieceGenerationMode==='BAG7') initBags();
+        updateSpeed(); updateUI();
+        document.getElementById('gameOver').style.display='none';
+        document.getElementById('leaderboardPanel').style.display='none';
+        document.getElementById('settingsPanel').style.display='none';
+        document.getElementById('pauseBtn').textContent='暂停';
+        nextPiece=getNextPiece(); spawnPiece(); drawHoldPiece();
+        gameStartTime=performance.now();
+        if(gameMode==='TIMED'){ document.getElementById('timerDisplay').style.display='flex'; startTimer(); }
+        else if(gameMode==='ULTRA'){ document.getElementById('timerDisplay').style.display='flex'; timeRemaining=120; updateTimerDisplay(); startTimer(); }
+        else if(gameMode==='SURVIVAL'){ document.getElementById('timerDisplay').style.display='none'; startSurvival(); }
+        else document.getElementById('timerDisplay').style.display='none';
+        lastDrop=0;
+        animationFrameId=requestAnimationFrame(gameLoop);
+    }
+    function togglePause(){ isPaused=!isPaused; document.getElementById('pauseBtn').textContent=isPaused?'继续':'暂停'; if(isPaused){ stopSoftDrop(); clearDAS(); if(timerInterval) clearInterval(timerInterval); stopSurvival(); } else { if(gameMode==='TIMED' && gameRunning && timeRemaining>0) startTimer(); else if(gameMode==='ULTRA' && gameRunning && timeRemaining>0) startTimer(); else if(gameMode==='SURVIVAL' && gameRunning) startSurvival(); } }
     function toggleSettings(){ let panel=document.getElementById('settingsPanel'); panel.style.display=panel.style.display==='block'?'none':'block'; }
 
     // 音效系统 (Web Audio)
     function initAudio(){ if(audioInitialized) return; try{ let AC=window.AudioContext||window.webkitAudioContext; if(AC){ audioContext=new AC(); audioInitialized=true; if(audioContext.state==='suspended'){ let resume=()=>{ audioContext.resume(); document.removeEventListener('click',resume); document.removeEventListener('touchstart',resume); }; document.addEventListener('click',resume,{once:true}); document.addEventListener('touchstart',resume,{once:true}); } } }catch(e){ console.warn(e); } }
-    function playSound(type){ if(!soundEnabled||!audioContext) return; if(audioContext.state==='suspended'){ audioContext.resume(); return; } try{ let now=audioContext.currentTime, osc=audioContext.createOscillator(), gain=audioContext.createGain(); osc.connect(gain); gain.connect(audioContext.destination); let freq=800, dur=0.1, vol=0.2; switch(type){ case'move': freq=600; dur=0.05; vol=0.1; break; case'rotate': freq=800; dur=0.07; vol=0.15; break; case'drop': freq=400; dur=0.15; vol=0.25; break; case'line': freq=1000; dur=0.2; vol=0.3; break; case'combo': freq=1200; dur=0.25; vol=0.35; break; case'levelup': freq=600; dur=0.4; vol=0.3; break; case'gameOver': freq=300; dur=0.6; vol=0.2; break; case'hold': freq=700; dur=0.1; vol=0.2; break; case'harddrop': freq=200; dur=0.2; vol=0.25; break; case'tick': freq=1500; dur=0.03; vol=0.1; break; default: return; } osc.frequency.value=freq; gain.gain.setValueAtTime(vol,now); gain.gain.exponentialRampToValueAtTime(0.0001,now+dur); osc.start(now); osc.stop(now+dur); osc.onended=()=>{ osc.disconnect(); gain.disconnect(); }; }catch(e){} }
+    function playSound(type){
+        if(!soundEnabled||!audioContext) return;
+        if(audioContext.state==='suspended'){ audioContext.resume(); return; }
+        try{
+            let now=audioContext.currentTime, freq=800, dur=0.1, vol=0.2, waveType='square';
+            switch(type){
+                case'move': freq=600; dur=0.04; vol=0.08; waveType='sine'; break;
+                case'rotate': freq=800; dur=0.06; vol=0.12; waveType='sine'; break;
+                case'drop': freq=400; dur=0.12; vol=0.2; waveType='square'; break;
+                case'line': freq=1000; dur=0.18; vol=0.25; waveType='sawtooth'; break;
+                case'combo': freq=1200; dur=0.22; vol=0.3; waveType='sawtooth'; break;
+                case'levelup': freq=600; dur=0.35; vol=0.28; waveType='sine'; break;
+                case'gameOver': freq=300; dur=0.5; vol=0.18; waveType='square'; break;
+                case'hold': freq=700; dur=0.08; vol=0.15; waveType='sine'; break;
+                case'harddrop': freq=150; dur=0.18; vol=0.28; waveType='sawtooth'; break;
+                case'tick': freq=1500; dur=0.03; vol=0.08; waveType='sine'; break;
+                case'tspin': freq=1400; dur=0.28; vol=0.35; waveType='sawtooth'; break;
+                default: return;
+            }
+            let osc=audioContext.createOscillator(), gain=audioContext.createGain();
+            osc.type=waveType;
+            osc.connect(gain); gain.connect(audioContext.destination);
+            osc.frequency.value=freq;
+            gain.gain.setValueAtTime(vol,now);
+            gain.gain.exponentialRampToValueAtTime(0.0001,now+dur);
+            osc.start(now); osc.stop(now+dur);
+            osc.onended=()=>{ osc.disconnect(); gain.disconnect(); };
+        }catch(e){}
+    }
 
-    // 事件绑定（移动端按钮立即响应）
+    // 事件绑定
     function bindEvents(){
-        // 键盘
-        document.addEventListener('keydown',(e)=>{ if(!gameRunning) return; switch(e.key){ case'ArrowLeft': e.preventDefault(); startSoftMove(-1); break; case'ArrowRight': e.preventDefault(); startSoftMove(1); break; case'ArrowDown': e.preventDefault(); startSoftDrop(); break; case'ArrowUp': e.preventDefault(); rotatePiece(); break; case' ': e.preventDefault(); hardDrop(); break; case'c':case'C': holdPiece(); break; case'p':case'P': togglePause(); break; case'Escape': toggleSettings(); break; } });
-        document.addEventListener('keyup',(e)=>{ if(e.key==='ArrowLeft'||e.key==='ArrowRight') stopSoftMove(); if(e.key==='ArrowDown') stopSoftDrop(); });
-        // 触摸按钮
+        document.addEventListener('keydown',(e)=>{
+            if(!gameRunning) return;
+            switch(e.key){
+                case'ArrowLeft': e.preventDefault(); startDAS(-1); break;
+                case'ArrowRight': e.preventDefault(); startDAS(1); break;
+                case'ArrowDown': e.preventDefault(); startSoftDrop(); break;
+                case'ArrowUp': e.preventDefault(); rotatePiece(); break;
+                case' ': e.preventDefault(); hardDrop(); break;
+                case'c':case'C': holdPiece(); break;
+                case'p':case'P': togglePause(); break;
+                case'Escape': toggleSettings(); break;
+            }
+        });
+        document.addEventListener('keyup',(e)=>{
+            if(e.key==='ArrowLeft'||e.key==='ArrowRight') clearDAS();
+            if(e.key==='ArrowDown') stopSoftDrop();
+        });
         const left=document.getElementById('btnLeft'), right=document.getElementById('btnRight'), down=document.getElementById('btnDown');
-        const bindMove = (btn, dir) => {
-            btn.addEventListener('touchstart', (e)=>{ e.preventDefault(); startSoftMove(dir); }, {passive:false});
-            btn.addEventListener('touchend', stopSoftMove); btn.addEventListener('touchcancel', stopSoftMove);
-            btn.addEventListener('mousedown', ()=>startSoftMove(dir)); btn.addEventListener('mouseup', stopSoftMove); btn.addEventListener('mouseleave', stopSoftMove);
+        const bindMove=(btn,dir)=>{
+            btn.addEventListener('touchstart',(e)=>{e.preventDefault();startDAS(dir);},{passive:false});
+            btn.addEventListener('touchend',clearDAS); btn.addEventListener('touchcancel',clearDAS);
+            btn.addEventListener('mousedown',()=>startDAS(dir)); btn.addEventListener('mouseup',clearDAS); btn.addEventListener('mouseleave',clearDAS);
         };
-        bindMove(left, -1); bindMove(right, 1);
-        down.addEventListener('touchstart', (e)=>{ e.preventDefault(); startSoftDrop(); }, {passive:false});
-        down.addEventListener('touchend', stopSoftDrop); down.addEventListener('touchcancel', stopSoftDrop);
-        down.addEventListener('mousedown', startSoftDrop); down.addEventListener('mouseup', stopSoftDrop); down.addEventListener('mouseleave', stopSoftDrop);
-        document.getElementById('btnRotate').addEventListener('click', rotatePiece); document.getElementById('btnHardDrop').addEventListener('click', hardDrop); document.getElementById('btnHold').addEventListener('click', holdPiece);
-        document.getElementById('touchControls').addEventListener('touchstart', initAudio);
+        bindMove(left,-1); bindMove(right,1);
+        down.addEventListener('touchstart',(e)=>{e.preventDefault();startSoftDrop();},{passive:false});
+        down.addEventListener('touchend',stopSoftDrop); down.addEventListener('touchcancel',stopSoftDrop);
+        down.addEventListener('mousedown',startSoftDrop); down.addEventListener('mouseup',stopSoftDrop); down.addEventListener('mouseleave',stopSoftDrop);
+        document.getElementById('btnRotate').addEventListener('click',rotatePiece);
+        document.getElementById('btnHardDrop').addEventListener('click',hardDrop);
+        document.getElementById('btnHold').addEventListener('click',holdPiece);
+        document.getElementById('touchControls').addEventListener('touchstart',initAudio);
+        document.getElementById('dasSlider').addEventListener('input',(e)=>{document.getElementById('dasValue').textContent=e.target.value;});
+        document.getElementById('arrSlider').addEventListener('input',(e)=>{document.getElementById('arrValue').textContent=e.target.value;});
     }
 
     window.addEventListener('load', async()=>{ await initDatabase(); bindEvents(); applyGridSize('12x24'); updateCanvasSize(); resetBoard(); nextPiece=getNextPiece(); spawnPiece(); animationFrameId=requestAnimationFrame(gameLoop); });
