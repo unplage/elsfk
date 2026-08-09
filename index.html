@@ -338,14 +338,6 @@
             0% { width: 10px; height: 10px; opacity: 0.8; }
             100% { width: 120px; height: 120px; opacity: 0; }
         }
-        .harddrop-trail {
-            position: absolute;
-            pointer-events: none;
-            background: var(--accent);
-            opacity: 0.15;
-            border-radius: 2px;
-            z-index: 5;
-        }
         .achievement-toast {
             position: absolute;
             top: 50%;
@@ -611,7 +603,7 @@
         playerStats.totalLines+=lines;
         if(comboCount>playerStats.maxCombo) playerStats.maxCombo=comboCount;
         if(score>playerStats.bestScore) playerStats.bestScore=score;
-        if(tSpinThisPlacement) playerStats.tSpinCount++;
+        // tSpinThisPlacement already counted in doLock/hardDrop
         savePlayerStats();
     }
     function updateStatsDisplay(){
@@ -790,6 +782,7 @@
         tSpinThisPlacement=checkTSpinPreMerge() && lastMoveWasKick;
         if(tSpinThisPlacement) playerStats.tSpinCount=(playerStats.tSpinCount||0)+1;
         merge();
+        playSound('drop');
         clearLines();
         spawnPiece();
         if(gameMode==='TIMED' && timeRemaining<=0) gameOver(false);
@@ -947,8 +940,9 @@
         score+=dist*2;
         // Shockwave effect
         let el=document.createElement('div'); el.className='shockwave';
-        el.style.left=(canvas.offsetLeft+(currentX+currentPiece.shape[0].length/2)*BLOCK_SIZE-60)+'px';
-        el.style.top=(canvas.offsetTop+(currentY+currentPiece.shape.length)*BLOCK_SIZE-60)+'px';
+        let rect=canvas.getBoundingClientRect();
+        el.style.left=(rect.left+(currentX+currentPiece.shape[0].length/2)*BLOCK_SIZE-60)+'px';
+        el.style.top=(rect.top+(currentY+currentPiece.shape.length)*BLOCK_SIZE-60)+'px';
         document.body.appendChild(el); setTimeout(()=>el.remove(),500);
         isLocking=false;
         tSpinThisPlacement=checkTSpinPreMerge() && lastMoveWasKick;
