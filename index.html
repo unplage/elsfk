@@ -16,13 +16,14 @@
             height: 100%;
             width: 100%;
             overflow: hidden;
+            overscroll-behavior: none;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             transition: background 0.3s ease;
         }
         body {
             color: #fff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            touch-action: none;
+            touch-action: manipulation;
             user-select: none;
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -186,6 +187,7 @@
         #settingsPanel {
             position: fixed;
             top: 2vh;
+            top: 2dvh;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.95);
@@ -197,7 +199,11 @@
             min-width: 200px;
             max-width: 90vw;
             max-height: 96vh;
+            max-height: 96dvh;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
             display: none;
         }
         .settings-title {
@@ -266,7 +272,11 @@
         #btnHardDrop { grid-column: 3; grid-row: 1; font-size: 20px; }
         #gameOver, #leaderboardPanel {
             max-height: 85vh;      /* 面板最多占屏幕高度的 85% */
+            max-height: 85dvh;
             overflow-y: auto;      /* 内容超出时显示垂直滚动条 */
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
             position: absolute;
             top: 50%;
             left: 50%;
@@ -419,7 +429,8 @@
             <div class="setting-group"><label class="setting-label">难度</label><select id="difficultySelect" onchange="changeDifficulty(this.value)"><option value="EASY">简单</option><option value="NORMAL" selected>普通</option><option value="HARD">困难</option><option value="EXPERT">专家</option></select></div>
             <div class="setting-group"><label class="setting-label">网格尺寸</label><select id="gridSizeSelect" onchange="changeGridSize(this.value)"><option value="10x20">小 (10x20)</option><option value="12x24" selected>中 (12x24)</option><option value="15x30">大 (15x30)</option></select></div>
             <div class="setting-group"><label class="setting-label">生成模式</label><select id="pieceModeSelect" onchange="changePieceMode(this.value)"><option value="BAG7" selected>7袋模式</option><option value="RANDOM">完全随机</option></select></div>
-            <div class="setting-group"><label><input type="checkbox" id="ghostPieceCheck" checked> 显示影子</label></div>
+            <div class="setting-group"><label><input type="checkbox" id="ghostPieceCheck" onchange="updateGhostLandingSync()" checked> 显示影子</label></div>
+            <div class="setting-group"><label><input type="checkbox" id="landingPointCheck" onchange="updateGhostLandingSync()"> 显示落点</label></div>
             <div class="setting-group"><label><input type="checkbox" id="soundCheck"> 音效</label></div>
             <div class="setting-group"><label class="setting-label">游戏模式</label><select id="gameModeSelect"><option value="NORMAL">经典模式</option><option value="TIMED">限时模式 (60秒)</option><option value="SPRINT">Sprint (40行)</option><option value="ULTRA">Ultra (2分钟)</option><option value="MARATHON">马拉松</option><option value="SURVIVAL">生存模式</option></select></div>
             <div class="setting-group"><label class="setting-label">DAS <span id="dasValue" style="color:var(--accent)">167</span>ms</label><input type="range" id="dasSlider" min="50" max="300" value="167"></div>
@@ -464,7 +475,7 @@
     let holdCanvas = document.getElementById('holdCanvas'), holdCtx = holdCanvas.getContext('2d');
     let nextPieceCanvas = document.getElementById('nextPieceCanvas'), nextPieceCtx = nextPieceCanvas.getContext('2d');
     let COLS=12, ROWS=24, BLOCK_SIZE=20, board=[], currentPiece=null, nextPiece=null, heldPiece=null, canHold=true, currentX=0, currentY=0;
-    let score=0, level=1, lines=0, dropSpeed=600, currentDifficulty='NORMAL', gameRunning=true, isPaused=false, lastDrop=0, ghostPieceY=0, showGhostPiece=true, pieceGenerationMode='BAG7', soundEnabled=false;
+    let score=0, level=1, lines=0, dropSpeed=600, currentDifficulty='NORMAL', gameRunning=true, isPaused=false, lastDrop=0, ghostPieceY=0, showGhostPiece=true, showLandingPoint=false, pieceGenerationMode='BAG7', soundEnabled=false;
     let bag=[];
     let audioContext=null, audioInitialized=false, animationFrameId=null;
     let comboCount=0;
@@ -661,6 +672,8 @@
                 currentDifficulty=s.difficulty||'NORMAL';
                 pieceGenerationMode=s.pieceMode||'BAG7';
                 showGhostPiece=s.showGhostPiece!==false;
+                showLandingPoint=s.showLandingPoint===true;
+                if(showLandingPoint) showGhostPiece=false;
                 soundEnabled=s.soundEnabled||false;
                 gameMode=s.gameMode||'NORMAL';
                 currentTheme=s.theme||'default';
@@ -673,6 +686,7 @@
                 document.getElementById('pieceModeSelect').value=pieceGenerationMode;
                 document.getElementById('gridSizeSelect').value=gridSize;
                 document.getElementById('ghostPieceCheck').checked=showGhostPiece;
+                document.getElementById('landingPointCheck').checked=showLandingPoint;
                 document.getElementById('soundCheck').checked=soundEnabled;
                 document.getElementById('gameModeSelect').value=gameMode;
                 document.getElementById('dasSlider').value=dasDelay;
@@ -687,10 +701,10 @@
     function saveSettings(){
         dasDelay=parseInt(document.getElementById('dasSlider').value);
         arrRate=parseInt(document.getElementById('arrSlider').value);
-        let settings={ difficulty:document.getElementById('difficultySelect').value, pieceMode:document.getElementById('pieceModeSelect').value, gridSize:document.getElementById('gridSizeSelect').value, showGhostPiece:document.getElementById('ghostPieceCheck').checked, soundEnabled:document.getElementById('soundCheck').checked, gameMode:document.getElementById('gameModeSelect').value, theme:currentTheme, dasDelay:dasDelay, arrRate:arrRate };
+        let settings={ difficulty:document.getElementById('difficultySelect').value, pieceMode:document.getElementById('pieceModeSelect').value, gridSize:document.getElementById('gridSizeSelect').value, showGhostPiece:document.getElementById('ghostPieceCheck').checked, showLandingPoint:document.getElementById('landingPointCheck').checked, soundEnabled:document.getElementById('soundCheck').checked, gameMode:document.getElementById('gameModeSelect').value, theme:currentTheme, dasDelay:dasDelay, arrRate:arrRate };
         let tx=db.transaction([SETTINGS_STORE],'readwrite');
         tx.objectStore(SETTINGS_STORE).put({key:'gameSettings',value:settings});
-        currentDifficulty=settings.difficulty; pieceGenerationMode=settings.pieceMode; showGhostPiece=settings.showGhostPiece; soundEnabled=settings.soundEnabled; gameMode=settings.gameMode;
+        currentDifficulty=settings.difficulty; pieceGenerationMode=settings.pieceMode; showLandingPoint=settings.showLandingPoint; showGhostPiece=settings.showGhostPiece&&!showLandingPoint; soundEnabled=settings.soundEnabled; gameMode=settings.gameMode;
         applyGridSize(settings.gridSize);
         dropSpeed=DIFFICULTY[currentDifficulty].speed;
         if(soundEnabled) initAudio();
@@ -847,7 +861,7 @@
         for(let x=0;x<=COLS;x++){ ctx.beginPath(); ctx.moveTo(x*BLOCK_SIZE,0); ctx.lineTo(x*BLOCK_SIZE,canvas.height); ctx.stroke(); }
         for(let y=0;y<=ROWS;y++){ ctx.beginPath(); ctx.moveTo(0,y*BLOCK_SIZE); ctx.lineTo(canvas.width,y*BLOCK_SIZE); ctx.stroke(); }
         for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) if(board[y][x]) drawBlock(x,y,board[y][x],ctx,BLOCK_SIZE);
-        if(showGhostPiece && currentPiece){
+        if(showGhostPiece && !showLandingPoint && currentPiece){
             ctx.globalAlpha=0.04;
             for(let y=currentY;y<=ghostPieceY;y++){
                 for(let py=0;py<currentPiece.shape.length;py++) for(let px=0;px<currentPiece.shape[py].length;px++)
@@ -857,6 +871,17 @@
             for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++)
                 if(currentPiece.shape[y][x]) drawBlock(currentX+x,ghostPieceY+y,currentPiece.color,ctx,BLOCK_SIZE);
             ctx.globalAlpha=1;
+        }
+        if(showLandingPoint && currentPiece){
+            ctx.strokeStyle=getColor(currentPiece.color); ctx.globalAlpha=0.8; ctx.lineWidth=2;
+            for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++){
+                if(!currentPiece.shape[y][x]) continue;
+                let cx=(currentX+x)*BLOCK_SIZE+BLOCK_SIZE/2, cy=(ghostPieceY+y)*BLOCK_SIZE+BLOCK_SIZE/2;
+                ctx.beginPath(); ctx.arc(cx,cy,BLOCK_SIZE*0.24,0,Math.PI*2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx-BLOCK_SIZE*0.35,cy); ctx.lineTo(cx+BLOCK_SIZE*0.35,cy); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx,cy-BLOCK_SIZE*0.35); ctx.lineTo(cx,cy+BLOCK_SIZE*0.35); ctx.stroke();
+            }
+            ctx.globalAlpha=1; ctx.lineWidth=1;
         }
         if(currentPiece){
             let isLockingFlash=isLocking && Math.floor((performance.now()-lockTimer)/100)%2===0;
@@ -994,6 +1019,8 @@
         pieceGenerationMode=document.getElementById('pieceModeSelect').value;
         gameMode=document.getElementById('gameModeSelect').value;
         showGhostPiece=document.getElementById('ghostPieceCheck').checked;
+        showLandingPoint=document.getElementById('landingPointCheck').checked;
+        if(showLandingPoint) showGhostPiece=false;
         soundEnabled=document.getElementById('soundCheck').checked;
         dasDelay=parseInt(document.getElementById('dasSlider').value);
         arrRate=parseInt(document.getElementById('arrSlider').value);
@@ -1014,6 +1041,14 @@
     }
     function togglePause(){ isPaused=!isPaused; document.getElementById('pauseBtn').textContent=isPaused?'继续':'暂停'; if(isPaused){ stopSoftDrop(); clearDAS(); if(timerInterval) clearInterval(timerInterval); stopSurvival(); } else { if(gameMode==='TIMED' && gameRunning && timeRemaining>0) startTimer(); else if(gameMode==='ULTRA' && gameRunning && timeRemaining>0) startTimer(); else if(gameMode==='SURVIVAL' && gameRunning) startSurvival(); } }
     function toggleSettings(){ let panel=document.getElementById('settingsPanel'); panel.style.display=panel.style.display==='block'?'none':'block'; }
+    function updateGhostLandingSync(){
+        let gp=document.getElementById('ghostPieceCheck').checked;
+        let lp=document.getElementById('landingPointCheck').checked;
+        if(lp && gp) document.getElementById('ghostPieceCheck').checked=false;
+        if(gp && lp) document.getElementById('landingPointCheck').checked=false;
+        showGhostPiece=document.getElementById('ghostPieceCheck').checked;
+        showLandingPoint=document.getElementById('landingPointCheck').checked;
+    }
 
     // 音效系统 (Web Audio)
     function initAudio(){ if(audioInitialized) return; try{ let AC=window.AudioContext||window.webkitAudioContext; if(AC){ audioContext=new AC(); audioInitialized=true; if(audioContext.state==='suspended'){ let resume=()=>{ audioContext.resume(); document.removeEventListener('click',resume); document.removeEventListener('touchstart',resume); }; document.addEventListener('click',resume,{once:true}); document.addEventListener('touchstart',resume,{once:true}); } } }catch(e){ console.warn(e); } }
