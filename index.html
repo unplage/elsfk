@@ -475,7 +475,7 @@
     let holdCanvas = document.getElementById('holdCanvas'), holdCtx = holdCanvas.getContext('2d');
     let nextPieceCanvas = document.getElementById('nextPieceCanvas'), nextPieceCtx = nextPieceCanvas.getContext('2d');
     let COLS=12, ROWS=24, BLOCK_SIZE=20, board=[], currentPiece=null, nextPiece=null, heldPiece=null, canHold=true, currentX=0, currentY=0;
-    let score=0, level=1, lines=0, dropSpeed=600, currentDifficulty='NORMAL', gameRunning=true, isPaused=false, lastDrop=0, ghostPieceY=0, showGhostPiece=true, showLandingPoint=false, pieceGenerationMode='BAG7', soundEnabled=false;
+    let score=0, level=1, lines=0, dropSpeed=600, currentDifficulty='NORMAL', gameRunning=true, isPaused=false, lastDrop=0, lastSoftDrop=0, ghostPieceY=0, showGhostPiece=true, showLandingPoint=false, pieceGenerationMode='BAG7', soundEnabled=false;
     let bag=[];
     let audioContext=null, audioInitialized=false, animationFrameId=null;
     let comboCount=0;
@@ -721,7 +721,7 @@
     function changePieceMode(mode){ pieceGenerationMode=mode; if(mode==='BAG7') initBags(); }
     function spawnPiece(){ currentPiece=nextPiece; currentX=Math.floor((COLS-currentPiece.shape[0].length)/2); currentY=0; nextPiece=getNextPiece(); canHold=true; lastMoveWasKick=false; updateGhostPiece(); if(collide(currentX,currentY,currentPiece)) gameOver(false); }
     function updateGhostPiece(){ if(!currentPiece) return; ghostPieceY=currentY; while(!collide(currentX,ghostPieceY+1,currentPiece)) ghostPieceY++; }
-    function collide(x,y,piece){ for(let py=0;py<piece.shape.length;py++) for(let px=0;px<piece.shape[py].length;px++) if(piece.shape[py][px]){ let nx=x+px, ny=y+py; if(nx<0||nx>=COLS||ny>=ROWS) return true; if(ny>=0 && board[ny][nx]) return true; } return false; }
+    function collide(x,y,piece){ for(let py=0;py<piece.shape.length;py++) for(let px=0;px<piece.shape[py].length;px++) if(piece.shape[py][px]){ let nx=x+px, ny=y+py; if(nx<0||nx>=COLS||ny>=ROWS||ny<0) return true; if(board[ny][nx]) return true; } return false; }
 
     // SRS 旋转
     function srsRotate(piece){
@@ -753,8 +753,12 @@
             }
             if(!success) return;
         }
-        if(isLocking){ lockMoveCount++; resetLockTimer(); }
-        updateGhostPiece();
+        if(isLocking){
+            lockMoveCount++; resetLockTimer();
+            while(!collide(currentX,currentY+1,currentPiece)) currentY++;
+            updateGhostPiece();
+            if(lockMoveCount>=MAX_LOCK_MOVES){ doLock(); return; }
+        }
         playSound('rotate');
     }
 
@@ -768,7 +772,7 @@
         updateGhostPiece(); drawHoldPiece(); playSound('hold');
     }
 
-    function merge(){ for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++) if(currentPiece.shape[y][x]) board[currentY+y][currentX+x]=currentPiece.color; }
+    function merge(){ for(let y=0;y<currentPiece.shape.length;y++) for(let x=0;x<currentPiece.shape[y].length;x++) if(currentPiece.shape[y][x]){ let row=currentY+y, col=currentX+x; if(row>=0&&row<ROWS&&col>=0&&col<COLS) board[row][col]=currentPiece.color; } }
 
     // T-Spin 检测
     function checkTSpinPreMerge(){
@@ -902,22 +906,30 @@
     // 游戏循环
     function gameLoop(timestamp){
         if(!gameRunning){ if(animationFrameId) cancelAnimationFrame(animationFrameId); return; }
-        if(!isPaused){
-            // Lock delay check
-            if(isLocking){
+        if(!isPaused && currentPiece){
+            // Phase 1: Gravity (soft drop or normal)
+            if(softDropping){
+                let softInterval=Math.max(1,dropSpeed/20);
+                if(timestamp-lastSoftDrop>softInterval){
+                    if(!collide(currentX,currentY+1,currentPiece)){
+                        currentY++; score++;
+                        if(isLocking){ isLocking=false; lockTimer=null; lockMoveCount=0; }
+                        lastSoftDrop=timestamp;
+                        updateGhostPiece();
+                        updateUI();
+                    } else {
+                        if(!isLocking) startLocking();
+                    }
+                }
+            } else {
+                if(timestamp-lastDrop>dropSpeed){
+                    drop();
+                    lastDrop=timestamp;
+                }
+            }
+            // Phase 2: Lock delay
+            if(isLocking && lockTimer!==null){
                 if(timestamp-lockTimer>=LOCK_DELAY) doLock();
-            }
-            // 20G soft drop
-            else if(softDropping && currentPiece){
-                let moved=false;
-                while(!collide(currentX,currentY+1,currentPiece)){ currentY++; score++; moved=true; }
-                if(moved){ updateGhostPiece(); updateUI(); }
-                startLocking();
-            }
-            // Normal gravity
-            else if(timestamp-lastDrop>dropSpeed){
-                drop();
-                lastDrop=timestamp;
             }
         }
         draw();
@@ -936,7 +948,12 @@
         if(!currentPiece||isPaused) return false;
         if(!collide(currentX+dir,currentY,currentPiece)){
             currentX+=dir; updateGhostPiece(); playSound('move');
-            if(isLocking){ lockMoveCount++; resetLockTimer(); if(lockMoveCount>=MAX_LOCK_MOVES) doLock(); }
+            if(isLocking){
+                lockMoveCount++; resetLockTimer();
+                while(!collide(currentX,currentY+1,currentPiece)) currentY++;
+                updateGhostPiece();
+                if(lockMoveCount>=MAX_LOCK_MOVES){ doLock(); return true; }
+            }
             return true;
         }
         return false;
@@ -955,7 +972,7 @@
         if(arrTimerId){clearInterval(arrTimerId);arrTimerId=null;}
         dasDir=0;
     }
-    function startSoftDrop(){ softDropping=true; }
+    function startSoftDrop(){ softDropping=true; lastSoftDrop=performance.now(); lastDrop=performance.now(); }
     function stopSoftDrop(){ softDropping=false; }
 
     function hardDrop(){
