@@ -464,9 +464,9 @@
     const DIFFICULTY = { EASY:{ speed:1000, scoreMultiplier:0.8 }, NORMAL:{ speed:600, scoreMultiplier:1.0 }, HARD:{ speed:350, scoreMultiplier:1.5 }, EXPERT:{ speed:200, scoreMultiplier:2.0 } };
     const GRID_SIZES = { '10x20':{ cols:10, rows:20, blockSize:24 }, '12x24':{ cols:12, rows:24, blockSize:20 }, '15x30':{ cols:15, rows:30, blockSize:16 } };
     const SHAPES = [
-        { shape:[[1,1,1,1]], color:1, name:'I' }, { shape:[[1,1],[1,1]], color:2, name:'O' }, { shape:[[0,1,0],[1,1,1]], color:3, name:'T' },
-        { shape:[[0,1,1],[1,1,0]], color:4, name:'S' }, { shape:[[1,1,0],[0,1,1]], color:5, name:'Z' },
-        { shape:[[1,0,0],[1,1,1]], color:6, name:'J' }, { shape:[[0,0,1],[1,1,1]], color:7, name:'L' }
+        { shape:[[1,1,1,1]], color:1, name:'I' }, { shape:[[1,1],[1,1]], color:2, name:'O' }, { shape:[[0,1,0],[1,1,1],[0,0,0]], color:3, name:'T' },
+        { shape:[[0,1,1],[1,1,0],[0,0,0]], color:4, name:'S' }, { shape:[[1,1,0],[0,1,1],[0,0,0]], color:5, name:'Z' },
+        { shape:[[1,0,0],[1,1,1],[0,0,0]], color:6, name:'J' }, { shape:[[0,0,1],[1,1,1],[0,0,0]], color:7, name:'L' }
     ];
     // SRS Wall Kick Tables
     const WK_JLSTZ = { '0>1':[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]], '1>0':[[0,0],[1,0],[1,-1],[0,2],[1,2]], '1>2':[[0,0],[1,0],[1,-1],[0,2],[1,2]], '2>1':[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]], '2>3':[[0,0],[1,0],[1,1],[0,-2],[1,-2]], '3>2':[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]], '3>0':[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]], '0>3':[[0,0],[1,0],[1,1],[0,-2],[1,-2]] };
