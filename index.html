@@ -58,7 +58,7 @@
             flex-direction: column;
             justify-content: flex-start;
             align-items: center;
-            padding: 4px 4px 0;
+            padding: 2px 2px 0;
         }
         #topBar {
             width: 100%;
@@ -137,7 +137,7 @@
             image-rendering: pixelated;
             background: var(--grid-bg);
             max-width: 100%;
-            max-height: 72vh;
+            max-height: 100%;
             width: auto;
             height: auto;
             display: block;
@@ -153,29 +153,29 @@
             z-index: 10;
         }
         #nextPieceContainer {
-            top: 4px;
-            right: 4px;
-            width: 44px;
-            height: 44px;
+            top: 2px;
+            right: 2px;
+            width: 30px;
+            height: 30px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 2px;
+            padding: 1px;
         }
         #sidePanel {
-            top: 4px;
-            left: 4px;
+            top: 2px;
+            left: 2px;
             display: flex;
             flex-direction: column;
-            gap: 2px;
-            padding: 2px;
+            gap: 1px;
+            padding: 1px;
         }
         .panel-title, .next-piece-label {
             display: none;
         }
         #nextPieceCanvas, #holdCanvas {
-            width: 40px;
-            height: 40px;
+            width: 28px;
+            height: 28px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 4px;
             display: block;
@@ -708,7 +708,21 @@
     }
 
     function applyGridSize(sizeKey){ let size=GRID_SIZES[sizeKey]; COLS=size.cols; ROWS=size.rows; BLOCK_SIZE=size.blockSize; updateCanvasSize(); resetBoard(); }
-    function updateCanvasSize(){ canvas.width=COLS*BLOCK_SIZE; canvas.height=ROWS*BLOCK_SIZE; let maxHeight=window.innerHeight*0.6; if(canvas.height>maxHeight){ let scale=maxHeight/canvas.height; canvas.style.width=(canvas.width*scale)+'px'; canvas.style.height=(canvas.height*scale)+'px'; } else { canvas.style.width='auto'; canvas.style.height='auto'; } resetBoard(); }
+    function updateCanvasSize(){
+        canvas.width=COLS*BLOCK_SIZE;
+        canvas.height=ROWS*BLOCK_SIZE;
+        let holdW=document.getElementById('sidePanel').offsetWidth||32;
+        let nextW=document.getElementById('nextPieceContainer').offsetWidth||30;
+        let gap=8;
+        let availW=window.innerWidth-4-holdW-nextW-gap*2;
+        let availH=window.innerHeight-document.getElementById('topBar').offsetHeight-document.getElementById('touchControls').offsetHeight-16;
+        let logicalW=COLS*BLOCK_SIZE, logicalH=ROWS*BLOCK_SIZE;
+        let scale=Math.min(availW/logicalW, availH/logicalH);
+        if(scale<=0) scale=1;
+        canvas.style.width=Math.floor(logicalW*scale)+'px';
+        canvas.style.height=Math.floor(logicalH*scale)+'px';
+        resetBoard();
+    }
     function resetBoard(){ board=Array(ROWS).fill().map(()=>Array(COLS).fill(0)); }
     function initBags(){ bag=[]; refillBag(bag); }
     function refillBag(bagArray){ let indices=[0,1,2,3,4,5,6]; for(let i=indices.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [indices[i],indices[j]]=[indices[j],indices[i]]; } indices.forEach(idx=>bagArray.push({...SHAPES[idx],rotation:0})); }
@@ -895,8 +909,8 @@
         context.fillStyle='rgba(0,0,0,0.3)'; context.fillRect(xp+ps-2,yp,2,ps); context.fillRect(xp,yp+ps-2,ps,2);
     }
     function getColor(n){ let cols=['','#00bcd4','#ff9800','#9c27b0','#4caf50','#f44336','#2196f3','#ffeb3b','#ff4444']; return cols[n]||'#fff'; }
-    function drawNextPiece(piece){ if(!piece)return; nextPieceCanvas.width=nextPieceCanvas.offsetWidth; nextPieceCanvas.height=nextPieceCanvas.offsetHeight; nextPieceCtx.fillStyle='rgba(0,0,0,0.3)'; nextPieceCtx.fillRect(0,0,nextPieceCanvas.width,nextPieceCanvas.height); let shape=piece.shape, sz=11, tw=shape[0].length*sz, th=shape.length*sz, sx=(nextPieceCanvas.width-tw)/2, sy=(nextPieceCanvas.height-th)/2; for(let y=0;y<shape.length;y++) for(let x=0;x<shape[0].length;x++) if(shape[y][x]) drawBlock(x,y,piece.color,nextPieceCtx,sz,sx,sy); nextPieceCtx.strokeStyle='var(--accent)'; nextPieceCtx.strokeRect(sx,sy,tw,th); }
-    function drawHoldPiece(){ holdCanvas.width=holdCanvas.offsetWidth; holdCanvas.height=holdCanvas.offsetHeight; holdCtx.fillStyle='rgba(0,0,0,0.3)'; holdCtx.fillRect(0,0,holdCanvas.width,holdCanvas.height); if(!heldPiece)return; let shape=heldPiece.shape, sz=11, tw=shape[0].length*sz, th=shape.length*sz, sx=(holdCanvas.width-tw)/2, sy=(holdCanvas.height-th)/2; for(let y=0;y<shape.length;y++) for(let x=0;x<shape[0].length;x++) if(shape[y][x]) drawBlock(x,y,heldPiece.color,holdCtx,sz,sx,sy); holdCtx.strokeStyle='var(--accent)'; holdCtx.strokeRect(sx,sy,tw,th); }
+    function drawNextPiece(piece){ if(!piece)return; nextPieceCanvas.width=nextPieceCanvas.offsetWidth; nextPieceCanvas.height=nextPieceCanvas.offsetHeight; nextPieceCtx.fillStyle='rgba(0,0,0,0.3)'; nextPieceCtx.fillRect(0,0,nextPieceCanvas.width,nextPieceCanvas.height); let shape=piece.shape, sz=Math.floor(nextPieceCanvas.width/4), tw=shape[0].length*sz, th=shape.length*sz, sx=(nextPieceCanvas.width-tw)/2, sy=(nextPieceCanvas.height-th)/2; for(let y=0;y<shape.length;y++) for(let x=0;x<shape[0].length;x++) if(shape[y][x]) drawBlock(x,y,piece.color,nextPieceCtx,sz,sx,sy); nextPieceCtx.strokeStyle='var(--accent)'; nextPieceCtx.strokeRect(sx,sy,tw,th); }
+    function drawHoldPiece(){ holdCanvas.width=holdCanvas.offsetWidth; holdCanvas.height=holdCanvas.offsetHeight; holdCtx.fillStyle='rgba(0,0,0,0.3)'; holdCtx.fillRect(0,0,holdCanvas.width,holdCanvas.height); if(!heldPiece)return; let shape=heldPiece.shape, sz=Math.floor(holdCanvas.width/4), tw=shape[0].length*sz, th=shape.length*sz, sx=(holdCanvas.width-tw)/2, sy=(holdCanvas.height-th)/2; for(let y=0;y<shape.length;y++) for(let x=0;x<shape[0].length;x++) if(shape[y][x]) drawBlock(x,y,heldPiece.color,holdCtx,sz,sx,sy); holdCtx.strokeStyle='var(--accent)'; holdCtx.strokeRect(sx,sy,tw,th); }
 
     // 游戏循环
     function gameLoop(timestamp){
@@ -1129,6 +1143,9 @@
         document.getElementById('touchControls').addEventListener('touchstart',initAudio);
         document.getElementById('dasSlider').addEventListener('input',(e)=>{document.getElementById('dasValue').textContent=e.target.value;});
         document.getElementById('arrSlider').addEventListener('input',(e)=>{document.getElementById('arrValue').textContent=e.target.value;});
+        window.addEventListener('resize',updateCanvasSize);
+        window.addEventListener('orientationchange',()=>setTimeout(updateCanvasSize,200));
+        if(window.visualViewport) window.visualViewport.addEventListener('resize',updateCanvasSize);
     }
 
     window.addEventListener('load', async()=>{ await initDatabase(); bindEvents(); applyGridSize('12x24'); updateCanvasSize(); resetBoard(); nextPiece=getNextPiece(); spawnPiece(); animationFrameId=requestAnimationFrame(gameLoop); });
