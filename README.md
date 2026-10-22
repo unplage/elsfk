@@ -71,6 +71,13 @@ convert icons/favicon-32.png icons/favicon-16.png icons/favicon.ico
 node tests/game.test.js   # 计分 / T-Spin 判定 / 锁延迟 / 暂存 / 模式目标 等 36 项
 node tests/srs.test.js    # SRS 踢墙表与官方规范一致性 34 项
 node tests/fuzz.test.js   # 8 种模式 × 4 难度 × 3 网格的随机对局模糊测试
+node tests/sw-isolation.test.js   # SW 多 PWA 同源共存隔离性 11 项
 ```
 
 `tests/dom-stub.js` 提供最小 DOM/Canvas 模拟，使 `index.html` 中的游戏逻辑可在 Node 中直接执行。
+
+> **同源多 PWA 注意事项**：所有项目站都部署在 `https://unplage.github.io` 同一源下，
+> 而 CacheStorage 是**按源**隔离而非按 SW 隔离。因此 `sw.js` 的 activate 清理逻辑
+> 必须只匹配**自身路径前缀**（`PROJECT_PREFIX`），绝不能使用 `pwa-cache-` 这类通用前缀，
+> 否则更新一个 PWA 的 SW 会把同源下其它 PWA 的缓存一并删除，导致那些应用离线失效。
+> `tests/sw-isolation.test.js` 会验证这一隔离性。

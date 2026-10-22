@@ -4,10 +4,11 @@
 // ---------- 1. 动态路径与缓存名称 ----------
 // 获取当前 sw.js 所在的目录路径（例如 '/pwa1/'）
 const BASE_PATH = self.location.pathname.replace(/[^/]+$/, '');
-// 构建带项目标识的缓存名称，避免多项目冲突
-// 例如 '/pwa1/' -> 'pwa-cache-pwa1-v1'
-const CACHE_VERSION = 'v11';
-const CACHE_NAME = `pwa-cache${BASE_PATH.replace(/\//g, '-')}${CACHE_VERSION}`;
+// 项目级缓存前缀：必须包含自身路径，否则会误删同源下其它 PWA 的缓存
+// 例如 '/elsfk/' -> 'pwa-cache-elsfk-'
+const PROJECT_PREFIX = `pwa-cache${BASE_PATH.replace(/\//g, '-')}`;
+const CACHE_VERSION = 'v12';
+const CACHE_NAME = `${PROJECT_PREFIX}${CACHE_VERSION}`;
 
 // 预缓存资源列表（全部使用相对于当前 sw.js 的路径）
 const PRECACHE_URLS = [
@@ -61,8 +62,11 @@ self.addEventListener('activate', (event) => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cache => {
-          // 只删除以 'pwa-cache-' 开头且不属于当前项目的缓存
-          if (cache.startsWith('pwa-cache-') && cache !== CACHE_NAME) {
+          // 只删除「本项目自己的历史版本」缓存。
+          // 注意：CacheStorage 是按源（origin）共享的，若用通用前缀如 'pwa-cache-'
+          // 过滤，会把同源下其它 PWA（/calculator/、/tcs/…）的缓存一并删掉，
+          // 导致那些应用在离线时无法打开。
+          if (cache.startsWith(PROJECT_PREFIX) && cache !== CACHE_NAME) {
             console.log('[SW] 删除旧缓存:', cache);
             return caches.delete(cache);
           }
@@ -122,12 +126,13 @@ self.addEventListener('fetch', (event) => {
   // ----- 5.2 静态资源请求：缓存优先，未命中则网络请求并缓存 -----
   if (isStaticResource(url)) {
     event.respondWith((async () => {
-      const cachedResponse = await caches.match(request);
+      // 只查本项目自己的缓存，避免读到同源其它 PWA 写入的条目
+      const cache = await caches.open(CACHE_NAME);
+      const cachedResponse = await cache.match(request);
       if (cachedResponse) return cachedResponse;
       const networkResponse = await fetch(request);
       if (networkResponse && networkResponse.status === 200) {
         // 放在 respondWith 的 Promise 链内，SW 生命周期会被自动保活
-        const cache = await caches.open(CACHE_NAME);
         await cache.put(request, networkResponse.clone());
       }
       return networkResponse;
