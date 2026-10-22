@@ -6,20 +6,27 @@
 const BASE_PATH = self.location.pathname.replace(/[^/]+$/, '');
 // 构建带项目标识的缓存名称，避免多项目冲突
 // 例如 '/pwa1/' -> 'pwa-cache-pwa1-v1'
-const CACHE_NAME = `pwa-cache${BASE_PATH.replace(/\\//g, '-')}v9`;
+const CACHE_VERSION = 'v11';
+const CACHE_NAME = `pwa-cache${BASE_PATH.replace(/\//g, '-')}${CACHE_VERSION}`;
 
 // 预缓存资源列表（全部使用相对于当前 sw.js 的路径）
 const PRECACHE_URLS = [
   BASE_PATH,                 // 例如 '/pwa1/'
   `${BASE_PATH}index.html`,
+  `${BASE_PATH}offline.html`,
   `${BASE_PATH}manifest.json`,
-  // 如果有图标，可以追加，例如：
-  // `${BASE_PATH}favicon.ico`,
-  // `${BASE_PATH}logo192.png`,
+  `${BASE_PATH}icons/icon-192.png`,
+  `${BASE_PATH}icons/icon-512.png`,
+  `${BASE_PATH}icons/maskable-192.png`,
+  `${BASE_PATH}icons/maskable-512.png`,
+  `${BASE_PATH}icons/apple-touch-icon.png`,
+  `${BASE_PATH}icons/favicon.svg`,
+  `${BASE_PATH}icons/favicon.ico`,
+  `${BASE_PATH}icons/favicon-32.png`,
 ];
 
 // 静态资源扩展名（用于判断是否缓存优先）
-const STATIC_EXTENSIONS = ['js', 'css', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'woff', 'woff2', 'ttf', 'eot', 'ico'];
+const STATIC_EXTENSIONS = ['js', 'css', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'woff', 'woff2', 'ttf', 'eot', 'ico', 'json', 'webmanifest'];
 
 // ---------- 2. 工具函数 ----------
 function isStaticResource(url) {
@@ -65,6 +72,11 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// 允许页面主动触发新版本接管
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
 // ---------- 5. 请求拦截 ----------
 self.addEventListener('fetch', (event) => {
   const { request } = event;
@@ -75,54 +87,54 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ----- 5.1 导航请求（HTML）：网络优先，失败回退缓存 -----
+  // ----- 5.1 导航请求（HTML）：缓存优先 + 后台更新（离线秒开） -----
   if (isNavigateRequest(request)) {
-    event.respondWith(
-      fetch(request)
-        .then(networkResponse => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(request, responseClone));
-          }
-          return networkResponse;
-        })
-        .catch(async () => {
-          // 网络失败，尝试从缓存获取
-          const cachedResponse = await caches.match(request);
-          if (cachedResponse) {
-            console.log('[SW] 离线模式，使用缓存页面:', url.pathname);
-            return cachedResponse;
-          }
-          // 连缓存都没有，返回自定义离线页（可预置 offline.html）
-          // 如果希望更美观，可以预缓存一个 offline.html 并在这里返回它
-          return new Response(
-            '<h1>📴 离线状态</h1><p>请检查网络连接后刷新页面。</p>',
-            { status: 503, statusText: 'Offline', headers: { 'Content-Type': 'text/html' } }
-          );
-        })
-    );
+    const cachePromise = caches.open(CACHE_NAME);
+    // 后台静默更新：先发起网络请求，用 waitUntil 保住 SW 生命周期
+    const networkPromise = fetch(request)
+      .then(networkResponse => {
+        if (networkResponse && networkResponse.status === 200) {
+          cachePromise.then(cache => cache.put(request, networkResponse.clone()));
+        }
+        return networkResponse;
+      })
+      .catch(() => null);
+    // 必须在事件派发期间同步调用 waitUntil，否则会抛 InvalidStateError
+    event.waitUntil(networkPromise);
+
+    event.respondWith((async () => {
+      const cache = await cachePromise;
+      const cached = await cache.match(request, { ignoreSearch: true });
+      if (cached) return cached;
+      const networkResponse = await networkPromise;
+      if (networkResponse) return networkResponse;
+      // 彻底离线且无缓存 -> 返回离线页
+      const offline = await cache.match(`${BASE_PATH}offline.html`);
+      if (offline) return offline;
+      return new Response(
+        '<h1>📴 离线状态</h1><p>请检查网络连接后刷新页面。</p>',
+        { status: 503, statusText: 'Offline', headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+      );
+    })());
     return;
   }
 
   // ----- 5.2 静态资源请求：缓存优先，未命中则网络请求并缓存 -----
   if (isStaticResource(url)) {
-    event.respondWith(
-      caches.match(request).then(cachedResponse => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        return fetch(request).then(networkResponse => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(request, responseClone));
-          }
-          return networkResponse;
-        }).catch(() => {
-          // 完全离线且无缓存，返回空响应（可自定义）
-          return new Response('', { status: 408 });
-        });
-      })
-    );
+    event.respondWith((async () => {
+      const cachedResponse = await caches.match(request);
+      if (cachedResponse) return cachedResponse;
+      const networkResponse = await fetch(request);
+      if (networkResponse && networkResponse.status === 200) {
+        // 放在 respondWith 的 Promise 链内，SW 生命周期会被自动保活
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(request, networkResponse.clone());
+      }
+      return networkResponse;
+    })().catch(() => {
+      // 完全离线且无缓存，返回空响应（可自定义）
+      return new Response('', { status: 408 });
+    }));
     return;
   }
 
