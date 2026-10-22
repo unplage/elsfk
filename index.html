@@ -263,6 +263,40 @@
             font-size: 10px; opacity: 0.45; pointer-events: none; white-space: nowrap;
         }
         @media (max-width: 360px) { .swipe-hint { display:none; } }
+        #startScreen {
+            position: fixed;
+            top: 0; right: 0; bottom: 0; left: 0;
+            z-index: 60;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(8,10,22,0.78);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        #startScreen.hide { display: none; }
+        .start-box {
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            max-width: 340px; text-align: center;
+        }
+        .start-logo { width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.55); }
+        .start-title { font-size: 25px; font-weight: 800; color: var(--accent); letter-spacing: 3px; }
+        .start-sub { font-size: 12px; opacity: .65; line-height: 1.7; }
+        .start-btn {
+            margin-top: 8px; padding: 13px 40px; font-size: 17px; font-weight: 700; cursor: pointer;
+            color: #08131f; background: linear-gradient(145deg, var(--accent), #039be5);
+            border: none; border-radius: 14px; box-shadow: 0 6px 20px rgba(79,195,247,.32);
+            touch-action: manipulation; -webkit-tap-highlight-color: transparent; font-family: inherit;
+        }
+        .start-btn:active { transform: translateY(2px); }
+        .start-modes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 6px; }
+        .mode-chip {
+            font-size: 11px; padding: 5px 11px; border-radius: 13px; cursor: pointer;
+            background: rgba(255,255,255,.08); border: 1px solid var(--border-color); color: #fff;
+            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+        }
+        .mode-chip.active { background: var(--accent); color: #08131f; border-color: var(--accent); font-weight: 700; }
         #settingsPanel {
             position: fixed;
             top: 2vh;
@@ -538,7 +572,17 @@
             <button class="touch-btn" id="btnRight">→</button>
         </div>
 </div>
-<div id="gameOver"><h2 id="gameOverTitle">游戏结束</h2><div id="gameOverSub" style="font-size:14px;margin-top:6px;color:var(--accent)"></div><div>最终分数: <span id="finalScore">0</span></div><div>消除行数: <span id="finalLines">0</span></div><div class="leaderboard-buttons"><button class="small-btn" onclick="restart()">再玩一次</button><button class="small-btn" onclick="toggleSettings()">设置</button></div></div>
+<div id="gameOver"><h2 id="gameOverTitle">游戏结束</h2><div id="gameOverSub" style="font-size:14px;margin-top:6px;color:var(--accent)"></div><div>最终分数: <span id="finalScore">0</span></div><div>消除行数: <span id="finalLines">0</span></div><div class="leaderboard-buttons"><button class="small-btn" onclick="restart(false)">再玩一次</button><button class="small-btn" onclick="toggleSettings()">设置</button></div></div>
+<div id="startScreen">
+    <div class="start-box">
+        <img class="start-logo" src="./icons/icon-192.png" alt="终极方块">
+        <div class="start-title">终极方块</div>
+        <div class="start-sub">SRS 旋转 · T-Spin 判定 · 官方计分（B2B / Combo / Perfect Clear）</div>
+        <button class="start-btn" id="btnStart">开始游戏</button>
+        <div class="start-modes" id="startModes"></div>
+        <div class="start-sub" style="opacity:.5">棋盘手势：左右滑=移动 · 上滑=旋转 · 下滑=硬降 · 轻点=暂存</div>
+    </div>
+</div>
 <div id="leaderboardPanel"><h2>历史排行榜</h2><div id="leaderboardList"></div><div class="leaderboard-buttons"><button class="small-btn" onclick="hideLeaderboard()">返回</button><button class="small-btn" onclick="clearAllRecords()">清空记录</button></div></div>
 
 <script>
@@ -874,13 +918,18 @@
     function applyGridSize(sizeKey){ let size=GRID_SIZES[sizeKey]; COLS=size.cols; ROWS=size.rows; resetBoard(); updateCanvasSize(); }
     function updateCanvasSize(){
         dpr = Math.min(window.devicePixelRatio||1, 3);
-        let holdW=document.getElementById('sidePanel').offsetWidth||36;
-        let nextW=document.getElementById('nextPieceContainer').offsetWidth||36;
-        let gap=6;
-        let availW=window.innerWidth-holdW-nextW-gap*2-8;
-        let availH=window.innerHeight-document.getElementById('topBar').offsetHeight-document.getElementById('touchControls').offsetHeight-20;
-        if(availW<=40) availW=Math.max(120,window.innerWidth*0.7);
-        if(availH<=40) availH=Math.max(160,window.innerHeight*0.6);
+        // 用真实布局测量可用空间，而不是把各部件高度相加（相加会漏掉
+        // margin / padding / border，导致棋盘底部被 overflow:hidden 裁掉）
+        const gameArea=document.getElementById('gameArea');
+        const topBar=document.getElementById('topBar');
+        const holdW=document.getElementById('sidePanel').offsetWidth||36;
+        const nextW=document.getElementById('nextPieceContainer').offsetWidth||36;
+        const gap=6;
+        let availW=(gameArea.clientWidth||window.innerWidth)-holdW-nextW-gap*2;
+        let availH=gameArea.clientHeight||0;
+        if(availW<=40) availW=Math.max(120,(window.innerWidth||360)*0.7);
+        if(availH<=40) availH=Math.max(160,(window.innerHeight||640)*0.6);
+        availH-=8;                                   // 画布上下边框 + 提示条余量
         let size=Math.min(availW/COLS, availH/ROWS);
         cellSize=Math.max(6, Math.floor(size*100)/100);
         let cssW=Math.floor(COLS*cellSize), cssH=Math.floor(ROWS*cellSize);
@@ -1257,7 +1306,7 @@
     // 游戏循环
     function gameLoop(timestamp){
         if(!gameRunning){ if(animationFrameId) cancelAnimationFrame(animationFrameId); return; }
-        if(!isPaused && currentPiece){
+        if(!isPaused && gameStarted && currentPiece){
             // Phase 1: 重力（软降或自然下落）
             if(softDropping){
                 let softInterval=Math.max(1,dropSpeed/20);
@@ -1391,6 +1440,33 @@
         playSound('gameOver');
         updateStatsDisplay();
     }
+    // 游戏开始前的启动界面
+    let gameStarted=false;
+    const START_MODES=[
+        {k:'NORMAL',label:'经典'},{k:'SPRINT',label:'Sprint 40行'},{k:'MARATHON',label:'马拉松 150行'},
+        {k:'ULTRA',label:'Ultra 2分钟'},{k:'TIMED',label:'限时 120秒'},{k:'SURVIVAL',label:'生存'},
+        {k:'ZEN',label:'禅'},{k:'DAILY',label:'每日挑战'}
+    ];
+    function renderModeChips(){
+        let box=document.getElementById('startModes');
+        if(!box) return;
+        box.innerHTML=START_MODES.map(m=>`<button class="mode-chip${m.k===gameMode?' active':''}" data-mode="${m.k}">${m.label}</button>`).join('');
+    }
+    function showStartScreen(){
+        gameStarted=false;
+        let el=document.getElementById('startScreen');
+        if(el) el.classList.remove('hide');
+        renderModeChips();
+    }
+    function startGame(){
+        if(gameStarted) return;
+        gameStarted=true;
+        let el=document.getElementById('startScreen');
+        if(el) el.classList.add('hide');
+        gameStartTime=performance.now();
+        lastDrop=performance.now(); lastSoftDrop=performance.now();
+        initAudio();
+    }
     function updateUI(){
         document.getElementById('score').textContent=score;
         document.getElementById('level').textContent=level;
@@ -1401,7 +1477,7 @@
     // 切换游戏模式（立即重开）
     function changeGameMode(mode){
         gameMode=mode;
-        restart();
+        restart(true);
         document.getElementById('settingsPanel').style.display='block';
     }
     // 模式目标行数（0 表示无目标）
@@ -1420,7 +1496,7 @@
         let d=new Date();
         return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
     }
-    function restart(){
+    function restart(keepStart){
         if(animationFrameId) cancelAnimationFrame(animationFrameId);
         stopSoftDrop(); clearDAS();
         if(timerInterval) clearInterval(timerInterval);
@@ -1460,6 +1536,10 @@
         else if(gameMode==='SURVIVAL'){ timerBox.style.display='none'; startSurvival(); }
         else { timerBox.style.display='none'; timeRemaining=120; updateTimerDisplay(); }
         lastDrop=performance.now();
+        gameStarted=!keepStart;
+        let startEl=document.getElementById('startScreen');
+        if(startEl) startEl.classList.toggle('hide', !keepStart);
+        if(keepStart) renderModeChips();
         animationFrameId=requestAnimationFrame(gameLoop);
     }
     function togglePause(){
@@ -1549,6 +1629,12 @@
         document.addEventListener('keydown',(e)=>{
             if(e.repeat) return;                       // 忽略系统自动重复
             if(e.target&&/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+            if(!gameStarted){
+                if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp',' '].indexOf(e.key)>=0){
+                    e.preventDefault(); startGame();
+                }
+                return;
+            }
             switch(e.key){
                 case'ArrowLeft': e.preventDefault(); heldKeys.add('ArrowLeft'); startDAS(-1); break;
                 case'ArrowRight': e.preventDefault(); heldKeys.add('ArrowRight'); startDAS(1); break;
@@ -1575,34 +1661,61 @@
         window.addEventListener('blur',()=>{ heldKeys.clear(); clearDAS(); stopSoftDrop(); if(gameRunning&&!isPaused) togglePause(); });
         document.addEventListener('visibilitychange',()=>{ if(document.hidden){ heldKeys.clear(); clearDAS(); stopSoftDrop(); if(gameRunning&&!isPaused) togglePause(); } });
 
-        // ---- 触控按钮（pointer 事件，延迟最低） ----
-        const bindHold=(btn,fn)=>{
+        // ---- 触控按钮 ----
+        // 统一封装：优先使用 Pointer Events；浏览器不支持时回退到
+        // touchstart / mousedown，保证任何环境下按钮都能响应
+        const hasPointer = typeof window.PointerEvent!=='undefined';
+        const bindPress=(btn,down,up)=>{
             if(!btn) return;
-            btn.addEventListener('pointerdown',(e)=>{ e.preventDefault(); initAudio(); fn(); });
+            if(hasPointer){
+                btn.addEventListener('pointerdown',(e)=>{ if(e.cancelable) e.preventDefault(); initAudio(); down&&down(); });
+                btn.addEventListener('pointerup',(e)=>{ e.preventDefault(); up&&up(); });
+                btn.addEventListener('pointercancel',()=>up&&up());
+                btn.addEventListener('pointerleave',()=>up&&up());
+                btn.addEventListener('contextmenu',(e)=>e.preventDefault());
+            } else {
+                btn.addEventListener('touchstart',(e)=>{ e.preventDefault(); initAudio(); down&&down(); },{passive:false});
+                btn.addEventListener('touchend',(e)=>{ e.preventDefault(); up&&up(); });
+                btn.addEventListener('touchcancel',()=>up&&up());
+                btn.addEventListener('mousedown',(e)=>{ e.preventDefault(); initAudio(); down&&down(); });
+                btn.addEventListener('mouseup',()=>up&&up());
+                btn.addEventListener('mouseleave',()=>up&&up());
+            }
         };
-        const bindMove=(btn,dir)=>{
-            if(!btn) return;
-            btn.addEventListener('pointerdown',(e)=>{ e.preventDefault(); initAudio(); startDAS(dir); });
-            btn.addEventListener('pointerup',clearDAS);
-            btn.addEventListener('pointercancel',clearDAS);
-            btn.addEventListener('pointerleave',clearDAS);
-            btn.addEventListener('contextmenu',(e)=>e.preventDefault());
-        };
-        bindMove(document.getElementById('btnLeft'),-1);
-        bindMove(document.getElementById('btnRight'),1);
-        const downBtn=document.getElementById('btnDown');
-        if(downBtn){
-            downBtn.addEventListener('pointerdown',(e)=>{ e.preventDefault(); initAudio(); startSoftDrop(); });
-            downBtn.addEventListener('pointerup',stopSoftDrop);
-            downBtn.addEventListener('pointercancel',stopSoftDrop);
-            downBtn.addEventListener('pointerleave',stopSoftDrop);
-        }
-        bindHold(document.getElementById('btnRotate'),rotatePiece);
-        bindHold(document.getElementById('btnHardDrop'),hardDrop);
-        bindHold(document.getElementById('btnHold'),holdPiece);
+        bindPress(document.getElementById('btnLeft'), ()=>startDAS(-1), clearDAS);
+        bindPress(document.getElementById('btnRight'), ()=>startDAS(1), clearDAS);
+        bindPress(document.getElementById('btnDown'), startSoftDrop, stopSoftDrop);
+        bindPress(document.getElementById('btnRotate'), rotatePiece);
+        bindPress(document.getElementById('btnHardDrop'), hardDrop);
+        bindPress(document.getElementById('btnHold'), holdPiece);
+        // 在 window 上兜底释放，避免手指抬起时事件落在按钮外导致 DAS 卡住
+        window.addEventListener('pointerup',clearDAS);
+        window.addEventListener('pointercancel',clearDAS);
+        window.addEventListener('touchend',clearDAS);
+        window.addEventListener('touchcancel',clearDAS);
+        window.addEventListener('mouseup',clearDAS);
 
         // ---- 棋盘手势：滑动移动/旋转/硬降，点按暂存 ----
         bindGestures();
+
+        // ---- 启动界面 ----
+        const startBtn=document.getElementById('btnStart');
+        if(startBtn){
+            const fire=(e)=>{ if(e.cancelable) e.preventDefault(); startGame(); };
+            startBtn.addEventListener('pointerdown',fire);
+            startBtn.addEventListener('click',fire);
+            startBtn.addEventListener('touchstart',fire,{passive:false});
+        }
+        const startModes=document.getElementById('startModes');
+        if(startModes){
+            startModes.addEventListener('click',(e)=>{
+                const chip=e.target.closest('[data-mode]');
+                if(!chip) return;
+                document.getElementById('gameModeSelect').value=chip.dataset.mode;
+                gameMode=chip.dataset.mode;
+                restart(true);
+            });
+        }
 
         // ---- 设置面板 ----
         document.getElementById('dasSlider').addEventListener('input',(e)=>{ document.getElementById('dasValue').textContent=e.target.value; markPreset('dasPresets','das',e.target.value); });
@@ -1628,44 +1741,61 @@
         let box=document.getElementById(containerId); if(!box) return;
         box.querySelectorAll('.preset-btn').forEach(b=>b.classList.toggle('active', b.dataset[attr]===String(value)));
     }
-    // 棋盘手势
+    // 棋盘手势：滑动移动/旋转/硬降，点按暂存
     function bindGestures(){
         let startX=0, startY=0, startT=0, active=false, moved=false;
-        const TH=24;   // 触发阈值(px)
-        canvas.addEventListener('pointerdown',(e)=>{
-            if(!gameRunning||isPaused) return;
-            active=true; moved=false;
-            startX=e.clientX; startY=e.clientY; startT=performance.now();
-            canvas.setPointerCapture&&canvas.setPointerCapture(e.pointerId);
-            initAudio();
-        });
-        canvas.addEventListener('pointermove',(e)=>{
+        const TH=22;   // 触发阈值(px)
+        const onDown=(x,y,t)=>{ active=true; moved=false; startX=x; startY=y; startT=t; initAudio(); };
+        const onMove=(x,y)=>{
             if(!active||moved) return;
-            let dx=e.clientX-startX, dy=e.clientY-startY;
+            let dx=x-startX, dy=y-startY;
             if(Math.abs(dx)<TH && Math.abs(dy)<TH) return;
             moved=true;
             if(Math.abs(dx)>Math.abs(dy)){
-                // 水平：每 TH 像素移动一格
-                let steps=Math.trunc(dx/TH);
-                let dir=steps>0?1:-1;
+                let steps=Math.trunc(dx/TH), dir=steps>0?1:-1;
                 for(let i=0;i<Math.abs(steps);i++) move(dir);
             } else if(dy<0){
                 rotatePiece();
             } else {
                 hardDrop();
             }
-            startX=e.clientX; startY=e.clientY;
-        });
-        const end=(e)=>{
+            startX=x; startY=y;
+        };
+        const onUp=()=>{
             if(!active) return;
             active=false;
-            if(!moved && performance.now()-startT<260){
-                holdPiece();               // 轻点 = 暂存
-            }
+            if(!moved && performance.now()-startT<300) holdPiece();   // 轻点 = 暂存
         };
-        canvas.addEventListener('pointerup',end);
-        canvas.addEventListener('pointercancel',()=>{active=false;});
-        canvas.addEventListener('contextmenu',(e)=>e.preventDefault());
+        if(typeof window.PointerEvent!=='undefined'){
+            canvas.addEventListener('pointerdown',(e)=>{
+                if(!gameRunning||isPaused) return;
+                e.preventDefault();
+                onDown(e.clientX,e.clientY,performance.now());
+                try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+            });
+            canvas.addEventListener('pointermove',(e)=>{ if(!active) return; e.preventDefault(); onMove(e.clientX,e.clientY); });
+            canvas.addEventListener('pointerup',onUp);
+            canvas.addEventListener('pointercancel',()=>{active=false;});
+            canvas.addEventListener('contextmenu',(e)=>e.preventDefault());
+        } else {
+            // 回退：touch events
+            canvas.addEventListener('touchstart',(e)=>{
+                if(!gameRunning||isPaused) return;
+                e.preventDefault();
+                const t=e.touches[0]; onDown(t.clientX,t.clientY,performance.now());
+            },{passive:false});
+            canvas.addEventListener('touchmove',(e)=>{
+                if(!active) return;
+                e.preventDefault();
+                const t=e.touches[0]; onMove(t.clientX,t.clientY);
+            },{passive:false});
+            canvas.addEventListener('touchend',(e)=>{ e.preventDefault(); onUp(); });
+            canvas.addEventListener('touchcancel',()=>{active=false;});
+            canvas.addEventListener('mousedown',(e)=>{ if(!gameRunning||isPaused) return; onDown(e.clientX,e.clientY,performance.now()); });
+            canvas.addEventListener('mousemove',(e)=>{ if(active) onMove(e.clientX,e.clientY); });
+            canvas.addEventListener('mouseup',onUp);
+            canvas.addEventListener('contextmenu',(e)=>e.preventDefault());
+        }
     }
 
     window.addEventListener('load', async()=>{
@@ -1674,7 +1804,8 @@
         refreshThemeColors();
         applyGridSize(document.getElementById('gridSizeSelect').value||'12x24');
         updateCanvasSize();
-        restart();                       // 统一走 restart()，保证首局模式/计时/统计正确
+        restart(true);                   // 统一走 restart()，保证首局模式/计时/统计正确
+        requestAnimationFrame(updateCanvasSize);   // 首帧布局稳定后再校准一次棋盘尺寸
         animationFrameId=requestAnimationFrame(gameLoop);
     });
 </script>
