@@ -588,7 +588,7 @@
 <script>
     // ---------- 数据库 & 全局变量 ----------
     const DB_NAME = 'TetrisGameDB';
-    const DB_VERSION = 2;
+    const DB_VERSION = 3;   // v3: 新增 gameMode 索引
     const RECORD_STORE = 'gameRecords';
     const SETTINGS_STORE = 'gameSettings';
     const STATS_STORE = 'playerStats';
@@ -679,32 +679,54 @@
     function getLocalDateString(){ let d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
     // IndexedDB 初始化
+    // 注意：这里必须有超时与 onblocked 处理。
+    // 某些环境（隐私模式、被其它标签页占用版本、存储被禁用）下
+    // indexedDB.open() 既不 success 也不 error，Promise 会永远挂起；
+    // 如果 UI 初始化 await 在这里，整个应用会卡死（按钮无响应、棋盘不显示）。
     function initDatabase() {
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_NAME, DB_VERSION);
-            request.onerror = e => reject(e.target.error);
+            let settled=false;
+            const finish=(fn,arg)=>{ if(settled) return; settled=true; fn(arg); };
+            let request;
+            try{
+                request = indexedDB.open(DB_NAME, DB_VERSION);
+            }catch(e){
+                reject(e); return;
+            }
+            const timer=setTimeout(()=>{
+                finish(reject, new Error('IndexedDB 打开超时，已切换为无痕模式'));
+            }, 2000);
+            request.onerror = e => { clearTimeout(timer); finish(reject, e.target.error||new Error('IndexedDB 打开失败')); };
+            request.onblocked = () => { clearTimeout(timer); finish(reject, new Error('IndexedDB 被其它标签页阻塞，已切换为无痕模式')); };
             request.onsuccess = async e => {
+                clearTimeout(timer);
                 db = e.target.result;
-                await Promise.all([loadHighScore(), loadSettings(), loadPlayerStats(), loadAchievements()]);
-                resolve(db);
+                try{
+                    await Promise.all([loadHighScore(), loadSettings(), loadPlayerStats(), loadAchievements()]);
+                }catch(err){ console.warn('读取本地数据失败', err); }
+                finish(resolve, db);
             };
             request.onupgradeneeded = e => {
-                let db = e.target.result;
-                if (!db.objectStoreNames.contains(RECORD_STORE)) {
-                    let store = db.createObjectStore(RECORD_STORE, { keyPath: 'id', autoIncrement: true });
-                    store.createIndex('score', 'score', { unique: false });
-                    store.createIndex('date', 'date', { unique: false });
-                    store.createIndex('gameMode', 'gameMode', { unique: false });
+                let idb = e.target.result;
+                if (!idb.objectStoreNames.contains(RECORD_STORE)) {
+                    idb.createObjectStore(RECORD_STORE, { keyPath: 'id', autoIncrement: true });
                 }
-                if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
-                    db.createObjectStore(SETTINGS_STORE, { keyPath: 'key' });
+                if (!idb.objectStoreNames.contains(SETTINGS_STORE)) {
+                    idb.createObjectStore(SETTINGS_STORE, { keyPath: 'key' });
                 }
-                if (!db.objectStoreNames.contains(STATS_STORE)) {
-                    db.createObjectStore(STATS_STORE, { keyPath: 'key' });
+                if (!idb.objectStoreNames.contains(STATS_STORE)) {
+                    idb.createObjectStore(STATS_STORE, { keyPath: 'key' });
                 }
-                if (!db.objectStoreNames.contains(ACH_STORE)) {
-                    db.createObjectStore(ACH_STORE, { keyPath: 'id' });
+                if (!idb.objectStoreNames.contains(ACH_STORE)) {
+                    idb.createObjectStore(ACH_STORE, { keyPath: 'id' });
                 }
+                // 索引单独补齐：store 已存在时（例如 v2 -> v3 升级）上面的分支不会执行
+                try{
+                    let store = e.target.transaction.objectStore(RECORD_STORE);
+                    if(!store.indexNames.contains('score')) store.createIndex('score','score',{unique:false});
+                    if(!store.indexNames.contains('date')) store.createIndex('date','date',{unique:false});
+                    if(!store.indexNames.contains('gameMode')) store.createIndex('gameMode','gameMode',{unique:false});
+                }catch(err){ console.warn('索引创建失败', err); }
             };
         });
     }
@@ -893,6 +915,8 @@
                     markPreset('arrPresets','arr',arrRate);
                     updateSpeed();
                     if(soundEnabled) initAudio();
+                    // 设置可能改变网格尺寸 / 模式，重开一局以套用（不会清掉正在进行的对局数据）
+                    if(typeof gameRunning!=='undefined' && gameRunning) restart(true);
                 }
                 resolve();
             };
@@ -1799,7 +1823,7 @@
     }
 
     window.addEventListener('load', async()=>{
-        try{ await initDatabase(); }catch(e){ console.warn('IndexedDB 不可用，使用内存模式', e); }
+        // ① 先把界面与交互准备好——绝不能被本地存储阻塞
         bindEvents();
         refreshThemeColors();
         applyGridSize(document.getElementById('gridSizeSelect').value||'12x24');
@@ -1807,6 +1831,12 @@
         restart(true);                   // 统一走 restart()，保证首局模式/计时/统计正确
         requestAnimationFrame(updateCanvasSize);   // 首帧布局稳定后再校准一次棋盘尺寸
         animationFrameId=requestAnimationFrame(gameLoop);
+        // ② 再异步读取本地数据（失败/超时都不影响上面的可用性）
+        try{
+            await initDatabase();
+        }catch(e){
+            console.warn('本地存储不可用，进入无痕模式：', e);
+        }
     });
 </script>
 <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(e=>console.log);</script>

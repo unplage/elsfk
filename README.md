@@ -73,6 +73,7 @@ node tests/game.test.js   # 计分 / T-Spin 判定 / 锁延迟 / 暂存 / 模式
 node tests/srs.test.js    # SRS 踢墙表与官方规范一致性 34 项
 node tests/fuzz.test.js   # 8 种模式 × 4 难度 × 3 网格的随机对局模糊测试
 node tests/sw-isolation.test.js   # SW 多 PWA 同源共存隔离性 11 项
+PUPPETEER_PATH=/tmp node tests/browser.test.js   # 浏览器端 20 项（需 puppeteer）
 ```
 
 `tests/dom-stub.js` 提供最小 DOM/Canvas 模拟，使 `index.html` 中的游戏逻辑可在 Node 中直接执行。
